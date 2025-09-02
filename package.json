@@ -1,0 +1,23 @@
+{
+  "name": "parcial2-api-mern",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ManuelaRamdan/parcial2-api-mern.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ManuelaRamdan/parcial2-api-mern/issues"
+  },
+  "homepage": "https://github.com/ManuelaRamdan/parcial2-api-mern#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

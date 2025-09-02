@@ -1,0 +1,17 @@
+para comenzar el proyecto
+npm init
+
+
+
+npm run start -> iniciar el proyecto pero tiene que estar esto en package.json:
+"scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index"
+  },
+
+
+para reconstruir el proyecto, clono el proyecto de github y luego voy a al consola 
+y tipeo lo sig: npm install
+ 
+ 
+esto reconstruye la carpeta mode_modules segun lo manisfestado en package.json
