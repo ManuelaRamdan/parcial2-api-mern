@@ -7,11 +7,21 @@ npm run start -> iniciar el proyecto pero tiene que estar esto en package.json:
 "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index"
+    "devstart": "node --watch index " -> recarga el servidor automaticamente -> en modo desarrollo
   },
+
+iniciar el server de dasarrollo poner: npm run devstart
 
 
 para reconstruir el proyecto, clono el proyecto de github y luego voy a al consola 
 y tipeo lo sig: npm install
- 
- 
+
+
 esto reconstruye la carpeta mode_modules segun lo manisfestado en package.json
+
+
+para matar procesos control + c
+
+useEffect es un hook que se ejecuta cuando el componente se renderiza, y también cuando cambian las variables que pongas en su lista de dependencias.
+
+buscar que es router?
