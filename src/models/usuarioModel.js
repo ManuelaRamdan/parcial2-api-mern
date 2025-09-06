@@ -43,7 +43,8 @@ function update(id, data) {
 // Eliminar: El alumno debe refactorear este codigo feo
 //splice -> es un método de los arrays en JavaScript que sirve para agregar, reemplazar o eliminar elementos de un array.
 function remove(id) {
-  const index = usuarios.findIndex((r) => r._id === id);
+  id = parseInt(id);
+  const index = usuarios.findIndex((u) => u.id === id);
   let existeUsuario = false;
   if (index !== -1) {
     existeUsuario = true;

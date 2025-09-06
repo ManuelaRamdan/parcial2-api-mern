@@ -24,9 +24,27 @@ para matar procesos control + c
 
 useEffect es un hook que se ejecuta cuando el componente se renderiza, y también cuando cambian las variables que pongas en su lista de dependencias.
 
-buscar que es router?
+-----postman -----
+get http://localhost:3000/api/usuarios -> todos los usuarios
+get http://localhost:3000/api/usuarios/id que queremos -> usuario de ese id
 
 
+post http://localhost:3000/api/usuarios -> crear usuarios
+    ir a body y poner:
+                      {
+                         "nombre": "María",
+                          "rol": "alumno"
+                      }   
+
+put http://localhost:3000/api/usuarios/ id que queremos -> actualiza
+    ir a body y poner raw 
+                        {
+                          "nombre": "María López",
+                          "rol": "profe"
+                        }
+
+
+delete http://localhost:3000/api/usuarios/2 -> elimina usuario
 ----- teoria? ------
 Routing-> se refiere a determinar cómo responde una aplicación a una solicitud de cliente a un punto final concreto, 
           que es un URI (o ruta) y un método de solicitud HTTP específico (GET, POST, etc.).
