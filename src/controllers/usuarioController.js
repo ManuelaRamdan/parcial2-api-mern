@@ -2,41 +2,37 @@
 const Usuario = require("../models/usuarioModel");
 
 
-// Obtener todos los usuarios
-function getAllUsuarios() {
-  return Usuario.getAll();
+function getAllUsuarios(req, res) {
+  const usuarios = Usuario.getAll();
+  res.json(usuarios);
 }
 
-// Obtener un usuario por ID
-function getUsuarioById(id) {
+function getUsuarioById(req, res) {
+  const id = parseInt(req.params.id);
   const usuario = Usuario.getById(id);
-  if (!usuario) return { error: "Usuario no encontrado" };
-  return usuario;
+  if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
+  res.json(usuario);
 }
 
-// Crear un nuevo usuario
-function createUsuario(data) {
-  const { nombre, rol } = data;
-  if (!nombre || !rol) {
-    return { error: "Faltan campos obligatorios" };
-  }
-  const nuevoUsuario = Usuario.create({ nombre, rol });
-  return nuevoUsuario;
+function createUsuario(req, res) {
+  const result = Usuario.create(req.body);
+  if (result.error) return res.status(400).json(result);
+  res.status(201).json(result);
 }
 
-// Actualizar un usuario
-function updateUsuario(id, data) {
-  const usuarioActualizado = Usuario.update(id, data);
-  if (!usuarioActualizado) return { error: "Usuario no encontrado" };
-  return usuarioActualizado;
+function updateUsuario(req, res) {
+  const id = parseInt(req.params.id);
+  const result = Usuario.update(id, req.body);
+  if (result.error) return res.status(404).json(result);
+  res.json(result);
 }
 
-// Eliminar un usuario
-function deleteUsuario(id) {
-  const eliminado = Usuario.remove(id);
-  if (!eliminado) return { error: "Usuario no encontrado" };
-  return { message: "Usuario eliminado" };
+function deleteUsuario(req, res) {
+  const result = Usuario.remove(req.params.id);
+  if (!result) return res.status(404).json({ error: "Usuario no encontrado" });
+  res.json({ message: "Usuario eliminado" });
 }
+
 
 // Exportar todas las funciones
 module.exports = {getAllUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario};
