@@ -7,9 +7,11 @@ app.use(express.json());
 
 // Importar routers
 const usuariosRouter = require('./routes/usuarioRoutes');
+const materiasRouter = require('./routes/materiaRoutes');
 
 // Usar routers
 app.use('/api/usuarios', usuariosRouter);
+app.use('/api/materias', materiasRouter);
 
 // Ruta raíz de prueba
 app.get('/', (req, res) => {
