@@ -18,8 +18,10 @@ function create(usuario) {
   // Math.max(...[1,2,3,4,5]) -> 5
   // Si el array estuviera vacio, el id deberia ser 1
   // Si no, el id deberia ser el maximo + 1
+  //materias: usuario.materias || [] para que si no viene, se inicialice como array vacio
   const newId = usuarios.length ? Math.max(...usuarios.map((r) => r.id)) + 1 : 1;
-  const nuevo = { id: newId, ...usuario };
+  //const nuevo = { id: newId, ...usuario, materias: usuario.materias || [] };
+  const nuevo = { id: newId, ...usuario};
   usuarios.push(nuevo);
   return nuevo;
 }
@@ -33,8 +35,9 @@ function update(id, data) {
   if (index !== -1) {
     // {...usuarios[index], ...data} -> crea un nuevo objeto con los datos viejos y los nuevos
     // copia el usuario y además sobrescribe o agrega las propiedades que estén en data.
-
-    usuarios[index] = { ...usuarios[index], ...data };
+    
+    // Para evitar que se cambie el id, lo reasignamos -> id: usuarios[index].id
+    usuarios[index] = { ...usuarios[index], ...data, id: usuarios[index].id };
     usuarioActualizado = usuarios[index];
   }
   return usuarioActualizado;
