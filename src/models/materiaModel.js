@@ -34,7 +34,7 @@ function update(id, data) {
     // {...materias[index], ...data} -> crea un nuevo objeto con los datos viejos y los nuevos
     // copia el materia y además sobrescribe o agrega las propiedades que estén en data.
 
-    materias[index] = { ...materias[index], ...data };
+    materias[index] = { ...materias[index], ...data, id: materias[index].id };
     materiaActualizado = materias[index];
   }
   return materiaActualizado;
