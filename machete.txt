@@ -45,25 +45,5 @@ put http://localhost:3000/api/usuarios/ id que queremos -> actualiza
 
 
 delete http://localhost:3000/api/usuarios/2 -> elimina usuario
------ teoria? ------
-Routing-> se refiere a determinar cómo responde una aplicación a una solicitud de cliente a un punto final concreto, 
-          que es un URI (o ruta) y un método de solicitud HTTP específico (GET, POST, etc.).
-
-          cada ruta tiene una o mas funciones de controlador que se ejecuta cuando se encuentra una coincidencia con la ruta
-
-          estructura basica -> app.METHOD(PATH, HANDLER)
-                              app -> instancia de espress
-                              METHOD -> metodo de http en minuscula
-                              Path -> ruta del servidor
-                              head -> que funcion ejecuta esa ruta
-          get -> para gestionar las solicitudes
-          post -> gestionar las solicitudes POST
-          app.all() para gestionar todos los métodos HTTP 
-          app.use() para especificar el middleware como función de devolución de llamada 
-                    Un middleware es básicamente una función que se ejecuta entre la petición (request) y la respuesta (response).
-
-          req.params: { "userId": "34", "bookId": "8989" }
-          app.get('/users/:userId/books/:bookId', (req, res) => {
-            res.send(req.params)
-          })          
+      
 
