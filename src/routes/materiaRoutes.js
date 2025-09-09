@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const materiaController = require("../controllers/materiaController");
+const materiaController = require("./../controllers/materiaController");
 
 // CRUD
 router.get("/", materiaController.getAllMaterias);
