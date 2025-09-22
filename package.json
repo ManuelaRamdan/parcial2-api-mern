@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "devstart": "node --watch src/index ",
+    "devstart": "node --watch src/index",
     "start": "node src/index"
   },
   "repository": {
@@ -19,6 +19,9 @@
   },
   "homepage": "https://github.com/ManuelaRamdan/parcial2-api-mern#readme",
   "dependencies": {
-    "express": "^5.1.0"
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "mongoose": "^8.18.2"
   }
 }
