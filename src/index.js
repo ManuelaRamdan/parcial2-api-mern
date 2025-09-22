@@ -8,7 +8,9 @@ const connectDB = require("./config/db");
 
 // Importar routers
 const usuariosRouter = require('./routes/usuarioRoutes');
-//const materiasRouter = require('./routes/materiaRoutes');
+const materiasRouter = require('./routes/materiaRoutes');
+const alumnoRouter = require('./routes/alumnoRoutes');
+const profesorRouter = require('./routes/profesorRoutes');
 
 const app = express();
 app.use(cors());// Middleware para habilitar CORS -> permite solicitudes desde otros dominios
@@ -19,7 +21,9 @@ connectDB();
 
 
 app.use('/api/usuarios', usuariosRouter);
-//app.use('/api/materias', materiasRouter);
+app.use('/api/materias', materiasRouter);
+app.use('/api/alumnos', alumnoRouter);
+app.use('/api/profesores',profesorRouter );
 
 // Inicio del server
 app.listen(port, () => {
