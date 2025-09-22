@@ -1,22 +1,23 @@
-const materias = [
-    {
-        id: 1,
-        nombre: "Matemática I",
-        profesor: 3,      // id del profe
-        alumnos: [1]      // ids de alumnos
+[
+    { //68cdd53a7a9194521b3d571c
+        "nombre": "Matemática", 
+        "curso": "1A", 
+        "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5715" }, "nombre": "Profe 1" } 
     },
-    {
-        id: 2,
-        nombre: "Lengua y Literatura",
-        profesor: 4,
-        alumnos: [1, 2]
+    { //68cdd53a7a9194521b3d571d
+        "nombre": "Historia", 
+        "curso": "1B", 
+        "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5716" }, "nombre": "Profe 2" } 
     },
-    {
-        id: 3,
-        nombre: "Historia",
-        profesor: 3,
-        alumnos: [2]
+    {  //68cdd53a7a9194521b3d571e
+        "nombre": "Lengua", 
+        "curso": "1A", 
+        "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5717" }, "nombre": "Profe 3" } 
+    },
+    { //68cdd53a7a9194521b3d571f
+        "nombre": "Geografía", 
+        "curso": "1B", 
+        "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5716" }, "nombre": "Profe 2" } 
     }
-];
+]
 
-module.exports = materias;
