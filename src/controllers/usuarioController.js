@@ -44,21 +44,32 @@ const createUsuario = async (req, res) => {
     }
 };
 
-// Actualizar
+
 const updateUsuario = async (req, res) => {
     try {
-        const usuario = await Usuario.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-        if (!usuario) {
-            //404 -> El servidor no pudo encontrar el contenido solicitado
-            res.status(404).json({ msg: "Usuario no encontrado" });
+        const usuario = await Usuario.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        );
 
-        } else {
-            res.json(usuario);
+        if (!usuario) {
+            return res.status(404).json({ msg: "Usuario no encontrado" });
         }
 
+        // Si el usuario es profesor, actualizar la colección Profesores
+        if (usuario.rol === "profesor" && req.body.nombre) {
+            await Profesor.updateMany(
+                { usuarioId: usuario._id },
+                { $set: { nombre: req.body.nombre } }
+            );
+        }
+
+        // Podés hacer algo similar para otras colecciones si es necesario
+
+        res.json(usuario);
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        res.status(500).json({ error: `Error al obtener o actualizar el usuario con id: ${req.params.id}` });
+        res.status(500).json({ error: `Error al actualizar el usuario con id: ${req.params.id}` });
     }
 };
 

@@ -1,16 +1,17 @@
 // src/controllers/usuarioController.js
-const Profesor = require("../models/ProfesorModel");
+const Profesor = require("../models/profesorModel");
 
 const getAllProfesores = async (req, res) => {
   try {
     const profesores = await Profesor.find()
-      .populate("usuarioId", "nombre email rol") // trae info del usuario
-      .populate("materiasDictadas.materiaId", "nombre curso"); // info de la materia
+      .populate("usuarioId", "nombre email rol")      // traer datos del usuario
+      .populate("materiasDictadas.materiaId", "nombre curso"); // traer datos de materias
     res.json(profesores);
   } catch (err) {
     res.status(500).json({ error: "Error al obtener Profesores" });
   }
 };
+
 
 
 // Obtener por ID
