@@ -1,38 +1,46 @@
 // src/controllers/usuarioController.js
 const Usuario = require("../models/usuarioModel");
+const AppError = require("../utils/AppError");
 
 // Obtener todos
-const getAllUsuarios = async (req, res) => {
+const getAllUsuarios = async (req, res, next) => {
     try {
         const usuarios = await Usuario.find();
         res.json(usuarios);
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        res.status(500).json({ error: "Error al obtener usuarios" });
+        if (err instanceof AppError) {
+            next(err);
+        } else {
+            next(new AppError("Error al obtener usuarios", 500));
+        }
     }
 };
 
 // Obtener por ID
 
-const getUsuarioById = async (req, res) => {
+const getUsuarioById = async (req, res, next) => {
     try {
         const usuario = await Usuario.findById(req.params.id);
         if (!usuario) {
             //404 -> El servidor no pudo encontrar el contenido solicitado
-            res.status(404).json({ msg: "Usuario no encontrado" });
-
+            throw new AppError("Usuario no encontrado", 404);
         } else {
             res.json(usuario);
         }
 
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        res.status(500).json({ error: `Error al obtener el usuario con id: ${req.params.id}` });
+        if (err instanceof AppError) {
+            next(err);
+        } else {
+            next(new AppError(`Error al obtener el usuario con id: ${req.params.id}`, 500));
+        }
     }
 };
 
 // Crear nuevo
-const createUsuario = async (req, res) => {
+const createUsuario = async (req, res, next) => {
     try {
         const nuevoUsuario = new Usuario(req.body);
         await nuevoUsuario.save();
@@ -40,12 +48,16 @@ const createUsuario = async (req, res) => {
         res.status(201).json(nuevoUsuario);
     } catch (err) {
         //400 -> La solicitud no se pudo completar debido a un error del cliente
-        res.status(400).json({ error: "Error al creae un usuario, verifique los datos." });
+        if (err instanceof AppError) {
+            next(err);
+        } else {
+            next(new AppError("Error al crear un usuario, verifique los datos.", 400));
+        }
     }
 };
 
 
-const updateUsuario = async (req, res) => {
+const updateUsuario = async (req, res, next) => {
     try {
         const usuario = await Usuario.findByIdAndUpdate(
             req.params.id,
@@ -54,40 +66,40 @@ const updateUsuario = async (req, res) => {
         );
 
         if (!usuario) {
-            return res.status(404).json({ msg: "Usuario no encontrado" });
-        }
+            throw new AppError("Usuario no encontrado", 404);
 
-        // Si el usuario es profesor, actualizar la colección Profesores
-        if (usuario.rol === "profesor" && req.body.nombre) {
-            await Profesor.updateMany(
-                { usuarioId: usuario._id },
-                { $set: { nombre: req.body.nombre } }
-            );
         }
 
         // Podés hacer algo similar para otras colecciones si es necesario
 
         res.json(usuario);
     } catch (err) {
-        res.status(500).json({ error: `Error al actualizar el usuario con id: ${req.params.id}` });
+        if (err instanceof AppError) {
+            next(err);
+        } else {                
+            next(new AppError(`Error al actualizar el usuario con id: ${req.params.id}`, 500));
+        }
     }
 };
 
 // Eliminar
-const deleteUsuario = async (req, res) => {
+const deleteUsuario = async (req, res, next) => {
     try {
         const usuario = await Usuario.findByIdAndDelete(req.params.id);
         if (!usuario) {
             //404 -> El servidor no pudo encontrar el contenido solicitado
-            res.status(404).json({ msg: "Usuario no encontrado" });
-
+            throw new AppError("Usuario no encontrado", 404);
         } else {
             res.json({ msg: `Usuario con id ${req.params.id} eliminado correctamente` });
         }
 
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        res.status(500).json({ error: `Error al obtener o borrar el usuario con id: ${req.params.id}` });
+        if (err instanceof AppError) {
+            next(err);
+        } else {                
+            next(new AppError(`Error al obtener o borrar el usuario con id: ${req.params.id}`, 500));
+        }
     }
 };
 

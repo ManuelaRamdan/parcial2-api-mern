@@ -22,7 +22,6 @@ const getAlumnoById = async (req, res, next) => {
         if (!alumno) {
             throw new AppError("Alumno no encontrado", 404);
         }
-
         const materias = alumno.materias.map(m => ({ id: m.materiaId, nombre: m.nombre }));
 
         res.json({
@@ -31,6 +30,8 @@ const getAlumnoById = async (req, res, next) => {
             curso: alumno.curso,
             materias
         });
+
+
     } catch (err) {
         if (err instanceof AppError) {
             next(err);
@@ -41,7 +42,7 @@ const getAlumnoById = async (req, res, next) => {
 };
 
 
-const createAlumno = async (req, res,next) => {
+const createAlumno = async (req, res, next) => {
     try {
         const nuevoAlumno = new Alumno(req.body);
         await nuevoAlumno.save();
@@ -54,7 +55,7 @@ const createAlumno = async (req, res,next) => {
 };
 
 
-const updateAlumno = async (req, res,next) => {
+const updateAlumno = async (req, res, next) => {
     try {
         const alumno = await Alumno.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         //404 -> El servidor no pudo encontrar el contenido solicitado
@@ -62,12 +63,16 @@ const updateAlumno = async (req, res,next) => {
 
         res.json(alumno);
     } catch (err) {
-        next(err instanceof AppError ? err : new AppError(`Error al actualizar el alumno con id: ${req.params.id}`, 500));
+        if (err instanceof AppError) {
+            next(err);
+        } else {
+            next(new AppError(`Error al obtener el alumno con id: ${req.params.id}`, 500));
+        }
     }
 };
 
 
-const getDetalleMateriaByMateriaId = async (req, res,next) => {
+const getDetalleMateriaByMateriaId = async (req, res, next) => {
     try {
         const alumno = await Alumno.findById(req.params.id);
         if (!alumno) throw new AppError("Alumno no encontrado", 404);
@@ -82,7 +87,11 @@ const getDetalleMateriaByMateriaId = async (req, res,next) => {
             asistencias: materia.asistencias
         });
     } catch (err) {
-        next(err instanceof AppError ? err : new AppError("Error al obtener detalle de la materia", 500));
+        if (err instanceof AppError) {
+            next(err);
+        } else {
+            next(new AppError(`Error al obtener el alumno con id: ${req.params.id}`, 500));
+        }
     }
 };
 
