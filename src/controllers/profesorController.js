@@ -33,8 +33,6 @@ const getProfesorById = async (req, res) => {
     }
 };
 
-
-
 module.exports = {
     getAllProfesores,
     getProfesorById
