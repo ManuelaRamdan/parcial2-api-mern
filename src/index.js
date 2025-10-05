@@ -32,5 +32,5 @@ app.use(errorHandler); // Middleware para manejo de errores
 
 // Inicio del server
 app.listen(port, () => {
-  console.log(`Servidor escuchando en http://localhost:${port}`);
+  console.log(`Servidor escuchando en ${port}`);
 });
