@@ -16,7 +16,7 @@ const usuarioSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   rol: { type: String, enum: ["padre", "profesor", "administrador"], required: true },
-  hijos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Alumno" }] // 
+  hijos: [{ type: String }] // 
 });
 
 // modelo es una clase que usamos para crear y leer documentos en la colección de usuarios

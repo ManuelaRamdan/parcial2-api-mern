@@ -1,6 +1,5 @@
 // src/controllers/usuarioController.js
 const Usuario = require("../models/usuarioModel");
-const AppError = require("../utils/AppError");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
@@ -11,11 +10,9 @@ const getAllUsuarios = async (req, res, next) => {
         res.json(usuarios);
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        if (err instanceof AppError) {
-            next(err);
-        } else {
-            next(new AppError("Error al obtener usuarios", 500));
-        }
+
+        next(err);
+
     }
 };
 
@@ -26,18 +23,16 @@ const getUsuarioById = async (req, res, next) => {
         const usuario = await Usuario.findById(req.params.id);
         if (!usuario) {
             //404 -> El servidor no pudo encontrar el contenido solicitado
-            throw new AppError("Usuario no encontrado", 404);
+            const error = new Error("Usuario no encontrado");
+            error.statusCode = 404;
+            throw error;
         } else {
             res.json(usuario);
         }
 
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        if (err instanceof AppError) {
-            next(err);
-        } else {
-            next(new AppError(`Error al obtener el usuario con id: ${req.params.id}`, 500));
-        }
+        next(err);
     }
 };
 
@@ -49,7 +44,9 @@ const createUsuario = async (req, res, next) => {
         // Verificar si el usuario ya existe
         const usuarioExistente = await Usuario.findOne({ email });
         if (usuarioExistente) {
-            return res.status(400).json({ error: "El email ya está registrado" });
+            const error = new Error("El email ya está registrado");
+            error.statusCode = 400;
+            throw error;
         }
 
         // Hashear la contraseña
@@ -79,8 +76,7 @@ const createUsuario = async (req, res, next) => {
         });
 
     } catch (err) {
-        console.error("Error al crear usuario:", err);
-        res.status(500).json({ error: "Error al crear usuario" });
+        next(err);
     }
 };
 
@@ -94,7 +90,9 @@ const updateUsuario = async (req, res, next) => {
         );
 
         if (!usuario) {
-            throw new AppError("Usuario no encontrado", 404);
+            const error = new Error("Usuario no encontrado");
+            error.statusCode = 404;
+            throw error;
 
         }
 
@@ -102,11 +100,7 @@ const updateUsuario = async (req, res, next) => {
 
         res.json(usuario);
     } catch (err) {
-        if (err instanceof AppError) {
-            next(err);
-        } else {
-            next(new AppError(`Error al actualizar el usuario con id: ${req.params.id}`, 500));
-        }
+        next(err);
     }
 };
 
@@ -116,36 +110,37 @@ const deleteUsuario = async (req, res, next) => {
         const usuario = await Usuario.findByIdAndDelete(req.params.id);
         if (!usuario) {
             //404 -> El servidor no pudo encontrar el contenido solicitado
-            throw new AppError("Usuario no encontrado", 404);
+            const error = new Error("Usuario no encontrado");
+            error.statusCode = 404;
+            throw error;
         } else {
             res.json({ msg: `Usuario con id ${req.params.id} eliminado correctamente` });
         }
 
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        if (err instanceof AppError) {
-            next(err);
-        } else {
-            next(new AppError(`Error al obtener o borrar el usuario con id: ${req.params.id}`, 500));
-        }
-    }
+        next(err);
+    };
+
 };
-
-
-const loginUsuario = async (req, res) => {
+const loginUsuario = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
         // Buscar usuario por email
         const usuario = await Usuario.findOne({ email });
         if (!usuario) {
-            return res.status(400).json({ error: "Usuario no encontrado" });
+            const error = new Error("Usuario no encontrado");
+            error.statusCode = 404;
+            throw error;
         }
 
         // Verificar contraseña (comparar con hash)
         const isMatch = await bcrypt.compare(password, usuario.password);
         if (!isMatch) {
-            return res.status(400).json({ error: "Contraseña incorrecta" });
+            const error = new Error("Contraseña incorrecta");
+            error.statusCode = 400;
+            throw error;
         }
 
         // Generar token JWT
@@ -163,12 +158,12 @@ const loginUsuario = async (req, res) => {
                 nombre: usuario.nombre,
                 email: usuario.email,
                 rol: usuario.rol,
-            },
+            }
         });
     } catch (err) {
-        console.error("Error en login:", err);
-        res.status(500).json({ error: "Error en el servidor" });
-    }
+        next(err);
+
+    };
 };
 
 module.exports = {
@@ -179,3 +174,4 @@ module.exports = {
     deleteUsuario,
     loginUsuario
 };
+

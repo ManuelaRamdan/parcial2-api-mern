@@ -22,7 +22,8 @@ const alumnoSchema = new mongoose.Schema({
           fecha: { type: Date, required: true },
           presente: { type: Boolean, required: true }
         }
-      ]
+      ],
+      dni:{ type: String, required: true}
     }
   ]
 });

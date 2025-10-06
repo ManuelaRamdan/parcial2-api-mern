@@ -1,6 +1,5 @@
 // src/controllers/usuarioController.js
 const Alumno = require("../models/AlumnoModel");
-const AppError = require("../utils/AppError");
 
 
 
@@ -10,7 +9,7 @@ const getAllAlumnos = async (req, res, next) => {
         res.json(alumnos);
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        next(new AppError("Error al obtener alumnos", 500));
+        next(err);
     }
 };
 
@@ -20,7 +19,9 @@ const getAlumnoById = async (req, res, next) => {
     try {
         const alumno = await Alumno.findById(req.params.id);
         if (!alumno) {
-            throw new AppError("Alumno no encontrado", 404);
+            const error = new Error("Alumno no encontrado");
+            error.statusCode = 404;
+            throw error;
         }
         const materias = alumno.materias.map(m => ({ id: m.materiaId, nombre: m.nombre }));
 
@@ -33,11 +34,8 @@ const getAlumnoById = async (req, res, next) => {
 
 
     } catch (err) {
-        if (err instanceof AppError) {
-            next(err);
-        } else {
-            next(new AppError(`Error al obtener el alumno con id: ${req.params.id}`, 500));
-        }
+        next(err);
+
     }
 };
 
@@ -50,7 +48,9 @@ const createAlumno = async (req, res, next) => {
         res.status(201).json(nuevoAlumno);
     } catch (err) {
         //400 -> La solicitud no se pudo completar debido a un error del cliente
-        next(new AppError("Error al crear un alumno, verifique los datos.", 400));
+        const error = new Error("Error al crear un alumno, verifique los datos.");
+        error.statusCode = 400;
+        next(error);
     }
 };
 
@@ -59,15 +59,14 @@ const updateAlumno = async (req, res, next) => {
     try {
         const alumno = await Alumno.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         //404 -> El servidor no pudo encontrar el contenido solicitado
-        if (!alumno) throw new AppError("Alumno no encontrado", 404);
-
+        if (!alumno) {
+            const error = new Error("Alumno no encontrado");
+            error.statusCode = 404;
+            throw error;
+        }
         res.json(alumno);
     } catch (err) {
-        if (err instanceof AppError) {
-            next(err);
-        } else {
-            next(new AppError(`Error al obtener el alumno con id: ${req.params.id}`, 500));
-        }
+        next(err);
     }
 };
 
@@ -75,7 +74,11 @@ const updateAlumno = async (req, res, next) => {
 const getDetalleMateriaByMateriaId = async (req, res, next) => {
     try {
         const alumno = await Alumno.findById(req.params.id);
-        if (!alumno) throw new AppError("Alumno no encontrado", 404);
+        if (!alumno) {
+            const error = new Error("Alumno no encontrado");
+            error.statusCode = 404;
+            throw error;
+        }
 
         const materia = alumno.materias.find(m => m.materiaId.toString() === req.params.materiaId);
         if (!materia) throw new AppError("Materia no encontrada para este alumno", 404);
@@ -87,22 +90,21 @@ const getDetalleMateriaByMateriaId = async (req, res, next) => {
             asistencias: materia.asistencias
         });
     } catch (err) {
-        if (err instanceof AppError) {
-            next(err);
-        } else {
-            next(new AppError(`Error al obtener el alumno con id: ${req.params.id}`, 500));
-        }
+        next(err);
+
     }
 };
 
 
 
-/*const deleteAlumno = async (req, res) => {
+const deleteAlumno = async (req, res,next) => {
     try {
         const alumno = await Alumno.findByIdAndDelete(req.params.id);
         if (!alumno) {
             //404 -> El servidor no pudo encontrar el contenido solicitado
-            res.status(404).json({ msg: "Alumno no encontrado" });
+            const error = new Error("Alumno no encontrado");
+            error.statusCode = 404;
+            throw error;
 
         } else {
             res.json({ msg: `Alumno con id ${req.params.id} eliminado correctamente` });
@@ -110,14 +112,15 @@ const getDetalleMateriaByMateriaId = async (req, res, next) => {
 
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        res.status(500).json({ error: `Error al obtener o borrar el Alumno con id: ${req.params.id}` });
+        next(err);
     }
-};*/
+};
 
 module.exports = {
     getAllAlumnos,
     getAlumnoById,
     createAlumno,
     updateAlumno,
-    getDetalleMateriaByMateriaId
+    getDetalleMateriaByMateriaId,
+    deleteAlumno
 };
