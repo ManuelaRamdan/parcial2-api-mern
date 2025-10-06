@@ -1,5 +1,5 @@
 // src/controllers/usuarioController.js
-const Alumno = require("../models/AlumnoModel");
+const Alumno = require("../models/alumnoModel");
 
 
 
@@ -23,14 +23,8 @@ const getAlumnoById = async (req, res, next) => {
             error.statusCode = 404;
             throw error;
         }
-        const materias = alumno.materias.map(m => ({ id: m.materiaId, nombre: m.nombre }));
 
-        res.json({
-            id: alumno._id,
-            nombre: alumno.nombre,
-            curso: alumno.curso,
-            materias
-        });
+        res.json(alumno);
 
 
     } catch (err) {
@@ -81,7 +75,11 @@ const getDetalleMateriaByMateriaId = async (req, res, next) => {
         }
 
         const materia = alumno.materias.find(m => m.materiaId.toString() === req.params.materiaId);
-        if (!materia) throw new AppError("Materia no encontrada para este alumno", 404);
+        if (!materia) {
+            const error = new Error("Materia no encontrada");
+            error.statusCode = 404;
+            throw error;
+        }
 
         res.json({
             nombre: materia.nombre,
@@ -97,7 +95,7 @@ const getDetalleMateriaByMateriaId = async (req, res, next) => {
 
 
 
-const deleteAlumno = async (req, res,next) => {
+const deleteAlumno = async (req, res, next) => {
     try {
         const alumno = await Alumno.findByIdAndDelete(req.params.id);
         if (!alumno) {

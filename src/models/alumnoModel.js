@@ -23,9 +23,10 @@ const alumnoSchema = new mongoose.Schema({
           presente: { type: Boolean, required: true }
         }
       ],
-      dni:{ type: String, required: true}
+      
     }
-  ]
+  ],
+  dni:{ type: String, required: true}
 });
 
 const Alumno = mongoose.model("Alumno", alumnoSchema);
