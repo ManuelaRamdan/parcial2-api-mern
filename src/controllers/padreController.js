@@ -3,17 +3,17 @@ const Alumno = require("../models/alumnoModel");
 
 const getAllHijos = async (req, res, next) => {
   try {
-    const idPadre = req.params.id;
+    // Obtener el padre desde el JWT
+    const idPadre = req.user.id;
     const padre = await Usuario.findOne({ _id: idPadre, rol: "padre" });
+
     if (!padre) {
       const error = new Error("Padre no encontrado");
       error.statusCode = 404;
-      throw error;
+      return next(error);
     }
 
     // Buscar los alumnos cuyos DNI estén en el array padre.hijos
-    //$in -> operador de MongoDB que se usa para verificar si un valor está dentro de un array
-    // se usa {} pq cada vez que usas $in debe ir dentro de un objeto
     const hijos = await Alumno.find({ dni: { $in: padre.hijos } });
 
     // Mapear solo la info que queremos mostrar
@@ -27,10 +27,7 @@ const getAllHijos = async (req, res, next) => {
       hijos: hijosInfo
     });
   } catch (err) {
-    //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-
     next(err);
-
   }
 };
 

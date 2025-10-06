@@ -2,14 +2,16 @@ const express = require("express");
 const router = express.Router();
 
 const usuarioController = require("./../controllers/usuarioController");
+const {authenticateToken} = require("./../middlewares/authMiddelware");
+const {isAdmin} = require("./../middlewares/verificarRolMiddelware");
 
 // CRUD
 //usuarioController.getAllUsuarios -> liga la ruta con la función del controlador
-router.get("/", usuarioController.getAllUsuarios);
-router.get("/:id", usuarioController.getUsuarioById);
-router.post("/register", usuarioController.createUsuario);
+router.get("/", [authenticateToken, isAdmin],usuarioController.getAllUsuarios);
+router.get("/:id", [authenticateToken, isAdmin], usuarioController.getUsuarioById);
+router.post("/register", [authenticateToken, isAdmin], usuarioController.createUsuario);
 router.post("/login", usuarioController.loginUsuario);
-router.put("/:id", usuarioController.updateUsuario);
-router.delete("/:id", usuarioController.deleteUsuario);
+router.put("/:id", [authenticateToken, isAdmin], usuarioController.updateUsuario);
+router.delete("/:id", [authenticateToken, isAdmin], usuarioController.deleteUsuario);
 
 module.exports = router;

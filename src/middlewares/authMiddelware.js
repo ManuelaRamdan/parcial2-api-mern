@@ -7,13 +7,17 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1]; // Extraer token después de "Bearer "
 
   if (!token) {
-    return res.status(401).json({ error: 'Acceso denegado. Token no proporcionado.' });
+    const error = new Error("Acceso denegado. Token no proporcionado.");
+    error.statusCode = 401;
+    return next(error);
   }
 
   // Verificar el token
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ error: 'Token inválido o expirado.' });
+      const error = new Error("Token inválido o expirado");
+      error.statusCode = 403;
+      return next(error);
     }
 
     // Agregar la información del usuario decodificada al request
@@ -21,3 +25,5 @@ const authenticateToken = (req, res, next) => {
     next(); // Continuar con la siguiente función
   });
 };
+
+module.exports = { authenticateToken };
