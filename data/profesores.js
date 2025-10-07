@@ -1,24 +1,224 @@
 [
   {
-    "usuarioId": { "$oid": "68cdd3317a9194521b3d5715" },
     "nombre": "Profe 1",
-    "materiasDictadas": [
-      { "materiaId": { "$oid": "68cdd53a7a9194521b3d571c" }, "nombre": "Matemática", "cursos": ["1A"] }
-    ]
+    "materiasDictadas":
+      [{
+        "nombre": "Matemática",
+        "cursos": "1A",
+        "alumnos": [
+          {
+            "nombre": "Alumno 1",
+            "dni": "1",
+            "notas":
+              [{
+                "tipo": "Parcial 1",
+                "nota": { "$numberInt": "8" }
+              },
+              {
+                "tipo": "Parcial 2",
+                "nota": { "$numberInt": "7" }
+              }, {
+                "tipo": "Parcial 3",
+                "nota": { "$numberInt": "9" }
+              }, {
+                "tipo": "Parcial 4",
+                "nota": { "$numberInt": "6" }
+              }],
+            "asistencias":
+              [{
+                "fecha": "2025-09-01",
+                "presente": true
+              }, {
+                "fecha": "2025-09-02",
+                "presente": true
+              }, {
+                "fecha": "2025-09-03",
+                "presente": false
+              }, {
+                "fecha": "2025-09-04",
+                "presente": true
+              }]
+          },
+          {
+            "nombre": "Alumno 2",
+            "dni": "2",
+            "notas": [{
+              "tipo": "Parcial 1",
+              "nota": { "$numberInt": "9" }
+            }, {
+              "tipo": "Parcial 2",
+              "nota": { "$numberInt": "8" }
+            }, {
+              "tipo": "Parcial 3",
+              "nota": { "$numberInt": "7" }
+            }, {
+              "tipo": "Parcial 4",
+              "nota": { "$numberInt": "6" }
+            }],
+            "asistencias": [{
+              "fecha": "2025-09-01",
+              "presente": true
+            }, {
+              "fecha": "2025-09-02",
+              "presente": false
+            }
+              , {
+              "fecha": "2025-09-03",
+              "presente": true
+            }
+              , {
+              "fecha": "2025-09-04",
+              "presente": true
+            }]
+          }]
+      }
+      ]
   },
   {
-    "usuarioId": { "$oid": "68cdd3317a9194521b3d5716" },
     "nombre": "Profe 2",
-    "materiasDictadas": [
-      { "materiaId": { "$oid": "68cdd53a7a9194521b3d571d" }, "nombre": "Historia", "cursos": ["1B"] },
-      { "materiaId":{ "$oid": "68cdd53a7a9194521b3d571f" }, "nombre": "Geografía", "cursos": ["1B"] }
+    "materiasDictadas": [{
+      "nombre": "Historia",
+      "cursos": "1B",
+      "alumnos": [{
+        "nombre": "Alumno 3",
+        "dni": "3",
+        "notas": [{
+          "tipo": "Parcial 1",
+          "nota": { "$numberInt": "8" }
+        }, {
+          "tipo": "Parcial 2",
+          "nota": { "$numberInt": "7" }
+        }, {
+          "tipo": "Parcial 3",
+          "nota": { "$numberInt": "6" }
+        }, {
+          "tipo": "Parcial 4",
+          "nota": { "$numberInt": "9" }
+        }], "asistencias": [{
+          "fecha": "2025-09-01",
+          "presente": true
+        }, {
+          "fecha": "2025-09-02",
+          "presente": false
+        }, {
+          "fecha": "2025-09-03",
+          "presente": true
+        }, {
+          "fecha": "2025-09-04",
+          "presente": true
+        }]
+      }, {
+        "nombre": "Geografía",
+        "cursos": "1B",
+        "alumnos": [{
+          "nombre": "Alumno 3",
+          "dni": "3",
+          "notas": [{
+            "tipo": "Parcial 1",
+            "nota": { "$numberInt": "9" }
+          }, {
+            "tipo": "Parcial 2",
+            "nota": { "$numberInt": "8" }
+          }, {
+            "tipo": "Parcial 3",
+            "nota": { "$numberInt": "7" }
+          }, {
+            "tipo": "Parcial 4",
+            "nota": { "$numberInt": "6" }
+          }],
+          "asistencias": [{
+            "fecha": "2025-09-01",
+            "presente": true
+          }, {
+            "fecha": "2025-09-02",
+            "presente": true
+          }, {
+            "fecha": "2025-09-03",
+            "presente": true
+          }, {
+            "fecha": "2025-09-04",
+            "presente": true
+          }]
+        },
+        ]
+      }
+      ]
+    }
     ]
   },
   {
-    "usuarioId": { "$oid": "68cdd3317a9194521b3d5717" },
+
     "nombre": "Profe 3",
     "materiasDictadas": [
-      { "materiaId": { "$oid": "68cdd53a7a9194521b3d571e" }, "nombre": "Lengua", "cursos": ["1A"] }
-    ]
+      {
+        "nombre": "Lengua",
+        "cursos": "1A",
+        "alumnos": [{
+          "nombre": "Alumno 1",
+          "dni": "1",
+          "notas":
+            [{
+              "tipo": "Parcial 1",
+              "nota": { "$numberInt": "7" }
+            }, {
+              "tipo": "Parcial 2",
+              "nota": { "$numberInt": "8" }
+            }, {
+              "tipo": "Parcial 3",
+              "nota": { "$numberInt": "6" }
+            }, {
+              "tipo": "Parcial 4",
+              "nota": { "$numberInt": "9" }
+            }],
+          "asistencias":
+            [{
+              "fecha": "2025-09-01",
+              "presente": true
+            },
+            {
+              "fecha": "2025-09-02",
+              "presente": true
+            }, {
+              "fecha": "2025-09-03",
+              "presente": true
+            }, {
+              "fecha": "2025-09-04",
+              "presente": false
+            }]
+        },
+        {
+          "nombre": "Alumno 2",
+          "dni": "2",
+          "notas":
+            [{
+              "tipo": "Parcial 1",
+              "nota": { "$numberInt": "6" }
+            }
+              , {
+              "tipo": "Parcial 2",
+              "nota": { "$numberInt": "7" }
+            }
+              , {
+              "tipo": "Parcial 3",
+              "nota": { "$numberInt": "8" }
+            }, {
+              "tipo": "Parcial 4",
+              "nota": { "$numberInt": "9" }
+            }],
+          "asistencias": [{
+            "fecha": "2025-09-01",
+            "presente": true
+          }, {
+            "fecha": "2025-09-02",
+            "presente": true
+          }, {
+            "fecha": "2025-09-03"
+            , "presente": true
+          }, {
+            "fecha": "2025-09-04",
+            "presente": true
+          }]
+        }]
+      }]
   }
 ]
