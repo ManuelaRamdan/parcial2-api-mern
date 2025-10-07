@@ -19,5 +19,6 @@
         "curso": "1B", 
         "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5716" }, "nombre": "Profe 2" } 
     }
+
 ]
 
