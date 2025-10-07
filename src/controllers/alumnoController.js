@@ -1,5 +1,6 @@
 // src/controllers/usuarioController.js
 const Alumno = require("../models/alumnoModel");
+const Profesor = require("../models/profesorModel");
 
 
 
@@ -48,6 +49,49 @@ const createAlumno = async (req, res, next) => {
     }
 };
 
+const syncProfesorConAlumno = async (alumno) => {
+    try {
+        const { nombre, dni, materias } = alumno;
+
+        await Profesor.updateMany(
+            { "materiasDictadas.alumnos.dni": dni },
+            {
+                $set: {
+                    "materiasDictadas.$[].alumnos.$[a].nombre": nombre,
+                    "materiasDictadas.$[].alumnos.$[a].dni": dni,
+                },
+            },
+            {
+                arrayFilters: [{ "a.dni": dni }],
+            }
+        );
+
+        if (materias && Array.isArray(materias)) {
+            for (const materia of materias) {
+                await Profesor.updateMany(
+                    { "materiasDictadas.materiaId": materia.materiaId },
+                    {
+                        $set: {
+                            "materiasDictadas.$[m].alumnos.$[a].notas": materia.notas,
+                            "materiasDictadas.$[m].alumnos.$[a].asistencias":
+                                materia.asistencias,
+                        },
+                    },
+                    {
+                        arrayFilters: [
+                            { "m.materiaId": materia.materiaId },
+                            { "a.dni": dni },
+                        ],
+                    }
+                );
+            }
+        }
+    } catch (error) {
+        console.error("❌ Error sincronizando profesores:", error);
+    }
+};
+
+
 
 const updateAlumno = async (req, res, next) => {
     try {
@@ -58,7 +102,12 @@ const updateAlumno = async (req, res, next) => {
             error.statusCode = 404;
             throw error;
         }
-        res.json(alumno);
+        await syncProfesorConAlumno(alumno);
+
+        res.json({
+            message: "Alumno actualizado correctamente",
+            alumno,
+        });
     } catch (err) {
         next(err);
     }
