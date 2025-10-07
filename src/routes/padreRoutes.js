@@ -7,5 +7,6 @@ const {isPadre} = require("./../middlewares/verificarRolMiddelware");
 
 // CRUD
 router.get("/", [authenticateToken, isPadre], padreController.getAllHijos);
+router.get("/:id", [authenticateToken, isPadre], padreController.getAllHijos);
 
 module.exports = router;

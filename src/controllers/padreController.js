@@ -4,8 +4,8 @@ const Alumno = require("../models/alumnoModel");
 const getAllHijos = async (req, res, next) => {
   try {
     // Obtener el padre desde el JWT
-    const idPadre = req.user.id;
-    const padre = await Usuario.findOne({ _id: idPadre, rol: "padre" });
+    const idPadre = req.user.id || req.params.id;
+    const padre = await Usuario.findOne({ _id: idPadre});
 
     if (!padre) {
       const error = new Error("Padre no encontrado");
