@@ -1,6 +1,8 @@
 // src/controllers/usuarioController.js
 const Materia = require("../models/materiaModel");
-const Profesor = require("../models/profesorModel");
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
+
 
 // Obtener todos
 const getAllMaterias = async (req, res, next) => {
@@ -34,13 +36,13 @@ const getMateriaById = async (req, res, next) => {
 const getMateriaByIdProfe = async (req, res, next) => {
     try {
         const profesorId = req.params.id;
-        const materia = await Materia.find({ profesor: profesorId });
+        const materias = await Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
         if (!materias || materias.length === 0) {
             const error = new Error("No se encontraron materias para este profesor");
             error.statusCode = 404;
             throw error;
         } else {
-            res.json(materia);
+            res.json(materias);
         }
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
