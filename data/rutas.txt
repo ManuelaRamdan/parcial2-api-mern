@@ -1,0 +1,26 @@
+profe
+- por el id del profe te muestra sus materias + los del alumno, sus notas y asistencias 
+- carga notas
+- carga asistencias presente-> int modificar 
+
+padre
+- *ver la lista de sus hijos por id del profe
+- *eligue un hijo y muestra datos
+
+admin
+- abm de alumno
+- abm de user
+    materias:
+        mostrar todas las materias, elegis y mostrar todos los datos de los alumnos (nombre y dni) -> paginados
+
+
+    profe:
+        
+        *mostrar datos del profe 
+        *mostrar todos los profes -> paginados falta
+
+habilitar carga de notas solo el campo, tipo cuando termina el cuatrimestre no podes modificar esas notas
+    se puede en notas poner un campo habilitado? true/false
+
+
+

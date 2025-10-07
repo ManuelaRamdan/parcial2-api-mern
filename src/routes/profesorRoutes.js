@@ -2,10 +2,13 @@ const express = require("express");
 const router = express.Router();
 
 const profesorController = require("../controllers/profesorController");
+const {authenticateToken} = require("./../middlewares/authMiddelware");
+const {isAdmin} = require("./../middlewares/verificarRolMiddelware");
 
 // CRUD
-router.get("/", profesorController.getAllProfesores);
-router.get("/:id", profesorController.getProfesorById);
+router.get("/",[authenticateToken, isAdmin], profesorController.getAllProfesores);
+router.get("/:id", [authenticateToken, isAdmin],profesorController.getProfesorById);
+
 //router.post("/", profesorController.createProfesor);
 //router.put("/:id", profesorController.updateProfesor);
 //router.delete("/:id", profesorController.deleteProfesor);
