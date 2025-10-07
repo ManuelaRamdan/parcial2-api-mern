@@ -3,9 +3,7 @@ const Profesor = require("../models/profesorModel");
 
 const getAllProfesores = async (req, res, next) => {
   try {
-    const profesores = await Profesor.find()
-      .populate("usuarioId", "nombre email rol")      // traer datos del usuario
-      .populate("materiasDictadas.materiaId", "nombre curso"); // traer datos de materias
+    const profesores = await Profesor.find();
     res.json(profesores);
   } catch (err) {
     next(err);
