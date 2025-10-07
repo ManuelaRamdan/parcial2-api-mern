@@ -11,7 +11,7 @@ admin
 - abm de alumno
 - abm de user
     materias:
-        mostrar todas las materias, elegis y mostrar todos los datos de los alumnos (nombre y dni) -> paginados
+        *mostrar todas las materias*,  -> (paginados x curso) es posible?
 
 
     profe:
