@@ -1,5 +1,5 @@
 profe
-- por el id del profe te muestra sus materias + los del alumno, sus notas y asistencias 
+- por el id del profe te muestra sus materias + los alumnos, sus notas y asistencias 
 - carga notas
 - carga asistencias presente-> int modificar 
 
