@@ -12,7 +12,7 @@ router.put("/:id", alumnoController.updateAlumno);
 router.get("/:id", alumnoController.getAlumnoById);
 
 // Obtener detalles de una materia de un alumno (profesor, notas, asistencias)
-router.get("/:id/materias/:materiaId", alumnoController.getDetalleMateriaByMateriaId);
+//router.get("/:id/materias/:materiaId", alumnoController.getDetalleMateriaByMateriaId);
 
 router.delete("/:id", alumnoController.deleteAlumno);
 

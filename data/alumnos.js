@@ -1,6 +1,5 @@
 [
   {
-    "_id": { "$oid": "68de80593d1ddd3fd29ddc60" },
     "nombre": "Alumno 1",
     "curso": "1A",
     "materias":
