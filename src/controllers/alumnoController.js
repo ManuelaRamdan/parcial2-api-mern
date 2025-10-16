@@ -3,16 +3,22 @@ const Alumno = require("../models/alumnoModel");
 const { actualizarAlumno } = require("../service/alumnoService");
 const Materia = require("../models/materiaModel");
 
+const paginate = require("../utils/paginar");
 
 const getAllAlumnos = async (req, res, next) => {
     try {
-        const alumnos = await Alumno.find();
-        res.json(alumnos);
+        const result = await paginate(Alumno, req, { sort: { nombre: 1 } });
+        res.json({
+            alumnos: result.data,
+            pagination: result.pagination
+        });
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
+
+
+
 
 //404 -> El servidor no pudo encontrar el contenido solicitado
 

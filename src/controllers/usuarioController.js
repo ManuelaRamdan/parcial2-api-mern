@@ -3,18 +3,22 @@ const Usuario = require("../models/usuarioModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-// Obtener todos
+
+
+const paginate = require("../utils/paginar");
+
 const getAllUsuarios = async (req, res, next) => {
     try {
-        const usuarios = await Usuario.find();
-        res.json(usuarios);
+        const result = await paginate(Usuario, req);
+        res.json({
+            usuarios: result.data,
+            pagination: result.pagination
+        });
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-
         next(err);
-
     }
 };
+
 
 // Obtener por ID
 

@@ -1,15 +1,25 @@
 // src/controllers/usuarioController.js
 const Materia = require("../models/materiaModel");
 
-// Obtener todos
+const paginate = require("../utils/paginar");
+
 const getAllMaterias = async (req, res, next) => {
     try {
-        const materias = await Materia.find();
-        res.json(materias);
-    } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        next(err);
+        const curso = req.query.curso; // ejemplo: /api/materias?curso=2A
 
+        const query = curso ? { curso } : {}; // si no viene, muestra todas
+
+        const result = await paginate(Materia, req, {
+            query,
+            sort: { nombre: 1 },
+        });
+
+        res.json({
+            materias: result.data,
+            pagination: result.pagination
+        });
+    } catch (err) {
+        next(err);
     }
 };
 
