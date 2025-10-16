@@ -122,41 +122,37 @@ const actualizarNotas = (notasAlumnoSub = [], notasActualizadas = []) => {
 
 //se usan valores por defecto [] para evitar errores si algún parámetro viene undefined
 
-const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas = [], next) => {
+const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas = []) => {
     if (Array.isArray(asistenciasActualizadas)) {
         //reduce se usa para iterer cada elemento del array y mantener el acumulador donde de acumula el resultado final
         // acc -> empieza siendo las asistencias actuales (asistenciasAlumnoSub) y se va modificando con cada iteración.
         //asisUpdate -> cada asistencia que queremos aplicar.
         asistenciasAlumno = asistenciasActualizadas.reduce((acc, asisUpdate) => {
+            const fechaUpdate = new Date(asisUpdate.fecha);
 
-            const timestamp = Date.parse(asisUpdate.fecha);
-            if (isNaN(timestamp)) {
-                const error = new Error("Fecha inválida en actualización de asistencias");
-                error.statusCode = 400;
-                throw next(error);
+            if (isNaN(fechaUpdate)) {
+                // Lanzar error atrapado por el middleware
+                const error = new Error(`Fecha inválida en asistencia: "${asisUpdate.fecha}"`);
+                error.statusCode = 422; //errores en la sementica
+                throw error;
             }
+            const fechaISO = fechaUpdate.toISOString().slice(0, 10);
 
-            //se convierte en timestamp a un objeto Date para trabajar con fechas
-            const fechaNueva = new Date(timestamp);
-            // se usa  toISOString().slice(0,10) para obtener solo la parte de la fecha en formato "YYYY-MM-DD".
-            const fechaISO = fechaNueva.toISOString().slice(0, 10);
+            const existe = acc.some(a => {
+                const fechaExistenteISO = new Date(a.fecha).toISOString().slice(0, 10);
+                return fechaExistenteISO === fechaISO;
+            });
 
-            // Buscar si ya existe una asistencia para esa fecha (comparando solo la parte de la fecha)
-            const asistenciaExistente = acc.find(
-                a => a.fecha && !isNaN(Date.parse(a.fecha)) && new Date(a.fecha).toISOString().slice(0, 10) === fechaISO
-            );
-
-            if (asistenciaExistente) {
-                acc = acc.map(a =>
-                    a.fecha && !isNaN(Date.parse(a.fecha)) && new Date(a.fecha).toISOString().slice(0, 10) === fechaISO
-                        ? { ...a, presente: asisUpdate.presente }
-                        : a
-                );
+            if (existe) {
+                return acc.map(a => {
+                    const fechaExistenteISO = new Date(a.fecha).toISOString().slice(0, 10);
+                    return fechaExistenteISO === fechaISO
+                        ? { ...a, fecha: fechaUpdate, presente: asisUpdate.presente }
+                        : a;
+                });
             } else {
-                acc = [...acc, { fecha: fechaNueva, presente: asisUpdate.presente }];
+                return [...acc, { fecha: fechaUpdate, presente: asisUpdate.presente }];
             }
-
-            return acc;
         }, asistenciasAlumno);
     }
     return asistenciasAlumno;
