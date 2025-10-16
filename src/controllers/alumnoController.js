@@ -61,6 +61,15 @@ const updateAlumno = async (req, res, next) => {
             throw error;
         }
 
+        if (Array.isArray(actualizarDatos.materias)) {
+            const faltaNombre = actualizarDatos.materias.some(m => !m.nombre);
+            if (faltaNombre) {
+                const error = new Error("Cada materia que se quiera modificar debe tener el campo 'nombre'");
+                error.statusCode = 422;
+                throw error;
+            }
+        }
+
         const alumnoActualizado = await actualizarAlumno(id, actualizarDatos, next);
 
         res.json({ message: "Alumno actualizado correctamente", alumno: alumnoActualizado });
