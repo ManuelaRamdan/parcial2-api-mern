@@ -162,7 +162,7 @@ const sincronizarAlumnoConColecciones = async (alumno, dniViejo, next) => {
     const { dni } = alumno;
 
     await actualizarDniEnUsuarios(dniViejo, dni);
-    await actualizarProfesores(dniViejo, alumno, next);
+    await actualizarProfesores( alumno, dniViejo, next);
 
 };
 
@@ -175,19 +175,28 @@ const actualizarDniEnUsuarios = async (dniViejo, dniNuevo) => {
     );
 };
 
+// 🔸 Actualizar datos en profesores
 const actualizarProfesores = async (alumno, dniViejo, next) => {
     const { nombre, dni, materias } = alumno;
 
-    // Buscar todos los profesores donde el alumno está registrado
+    // Buscar profesores donde el alumno está registrado
     const profesores = await Profesor.find({ "materiasDictadas.alumnos.dni": dniViejo });
 
     await Promise.all(
         profesores.map(async (prof) => {
+            if (!Array.isArray(prof.materiasDictadas)) {
+                console.warn(`⚠️ Profesor ${prof.nombre} no tiene materiasDictadas definidas`);
+                return;
+            }
+
             let huboCambios = false;
 
             const materiasNuevas = prof.materiasDictadas.map((materiaDictada) => {
                 const materiaAlumno = materias.find((m) => m.nombre === materiaDictada.nombre);
-                if (!materiaAlumno) return materiaDictada; // no coincide materia
+                if (!materiaAlumno) {
+                    console.log(`⚠️ No se encontró la materia ${materiaDictada.nombre} para el alumno ${nombre}`);
+                    return materiaDictada;
+                }
 
                 // Actualizar alumnos
                 const alumnosActualizados = materiaDictada.alumnos.map((alumnoSub) =>
@@ -202,9 +211,14 @@ const actualizarProfesores = async (alumno, dniViejo, next) => {
                         : alumnoSub
                 );
 
-                // Actualizar profesor si cambió
+                // Actualizar profesor si cambió (con validaciones)
                 let profActual = materiaDictada.profesor;
-                if (materiaAlumno.profesor && materiaAlumno.profesor.nombre !== materiaDictada.profesor.nombre) {
+                if (
+                    materiaAlumno?.profesor &&
+                    materiaAlumno.profesor?.nombre &&
+                    materiaDictada.profesor?.nombre &&
+                    materiaAlumno.profesor.nombre !== materiaDictada.profesor.nombre
+                ) {
                     profActual = materiaAlumno.profesor;
                     huboCambios = true;
                 }
@@ -221,7 +235,7 @@ const actualizarProfesores = async (alumno, dniViejo, next) => {
                 prof.materiasDictadas = materiasNuevas;
                 prof.markModified("materiasDictadas");
                 await prof.save({ validateBeforeSave: false });
-                console.log(`Profesor ${prof.nombre || prof._id} sincronizado.`);
+                console.log(`✅ Profesor ${prof.nombre || prof._id} sincronizado.`);
             }
         })
     );
