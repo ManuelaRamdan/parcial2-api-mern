@@ -2,6 +2,7 @@
 const Alumno = require("../models/alumnoModel");
 const Profesor = require("../models/profesorModel");
 const Usuario = require("../models/usuarioModel");
+const Materia = require("../models/materiaModel");
 
 
 
@@ -62,11 +63,17 @@ const updateAlumno = async (req, res, next) => {
             throw next(error);
         }
 
+        // 🔹 Validar que no se modifique curso ni profesor desde aquí
+        if (actualizarDatos.curso || actualizarDatos.materias?.some(m => m.profesor)) {
+            const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, lo tendra que hacer desde Materias");
+            error.statusCode = 422;
+            throw error;
+        }
+
         const dniViejo = alumno.dni;
 
         // Actualizar datos básicos
         if (actualizarDatos.nombre) alumno.nombre = actualizarDatos.nombre;
-        if (actualizarDatos.curso) alumno.curso = actualizarDatos.curso;
         if (actualizarDatos.dni) alumno.dni = actualizarDatos.dni;
 
         // Actualizar materias
@@ -162,9 +169,26 @@ const sincronizarAlumnoConColecciones = async (alumno, dniViejo, next) => {
     const { dni } = alumno;
 
     await actualizarDniEnUsuarios(dniViejo, dni);
-    await actualizarProfesores( alumno, dniViejo, next);
+    await actualizarProfesores(alumno, dniViejo, next);
+    await actualizarAlumnoEnMaterias (dniViejo, alumno.nombre, alumno.dni);
 
 };
+
+const actualizarAlumnoEnMaterias = async (dniViejo, nombreNuevo, dniNuevo) => {
+    await Materia.updateMany(
+        { "alumnos.dni": dniViejo }, // Todas las materias donde está este alumno
+        {
+            $set: {
+                "alumnos.$[alumno].nombre": nombreNuevo,
+                "alumnos.$[alumno].dni": dniNuevo
+            }
+        },
+        {
+            arrayFilters: [{ "alumno.dni": dniViejo }], // Solo actualiza el alumno correcto
+        }
+    );
+};
+
 
 
 
@@ -179,67 +203,57 @@ const actualizarDniEnUsuarios = async (dniViejo, dniNuevo) => {
 const actualizarProfesores = async (alumno, dniViejo, next) => {
     const { nombre, dni, materias } = alumno;
 
-    // Buscar profesores donde el alumno está registrado
-    const profesores = await Profesor.find({ "materiasDictadas.alumnos.dni": dniViejo });
+    try {
+        // Buscar profesores donde el alumno está registrado
+        const profesores = await Profesor.find({ "materiasDictadas.alumnos.dni": dniViejo });
 
-    await Promise.all(
-        profesores.map(async (prof) => {
-            if (!Array.isArray(prof.materiasDictadas)) {
-                console.warn(`⚠️ Profesor ${prof.nombre} no tiene materiasDictadas definidas`);
-                return;
-            }
+        await Promise.all(
+            profesores.map(async (prof) => {
 
-            let huboCambios = false;
+                let huboCambios = false;
 
-            const materiasNuevas = prof.materiasDictadas.map((materiaDictada) => {
-                const materiaAlumno = materias.find((m) => m.nombre === materiaDictada.nombre);
-                if (!materiaAlumno) {
-                    console.log(`⚠️ No se encontró la materia ${materiaDictada.nombre} para el alumno ${nombre}`);
-                    return materiaDictada;
+                const materiasNuevas = prof.materiasDictadas.map((materiaDictada) => {
+                    const materiaAlumno = materias.find((m) => m.nombre === materiaDictada.nombre);
+                    if (!materiaAlumno) {
+                        console.warn(`⚠️ No se encontró la materia ${materiaDictada.nombre} para el alumno ${nombre}`);
+                        return materiaDictada;
+                    }
+
+                    // 🔹 Actualizar solo el alumno correspondiente
+                    const alumnosActualizados = materiaDictada.alumnos.map((alumnoSub) =>
+                        alumnoSub.dni === dniViejo
+                            ? {
+                                ...alumnoSub,
+                                nombre,
+                                dni,
+                                notas: actualizarNotas(alumnoSub.notas, materiaAlumno.notas),
+                                asistencias: actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias, next),
+                            }
+                            : alumnoSub
+                    );
+
+                    // Chequear si hubo cambios
+                    if (JSON.stringify(alumnosActualizados) !== JSON.stringify(materiaDictada.alumnos)) {
+                        huboCambios = true;
+                    }
+
+                    // 🔹 No modificar profesor
+                    return { ...materiaDictada, alumnos: alumnosActualizados };
+                });
+
+                if (huboCambios) {
+                    prof.materiasDictadas = materiasNuevas;
+                    prof.markModified("materiasDictadas");
+                    await prof.save({ validateBeforeSave: false });
+                    console.log(`✅ Profesor ${prof.nombre || prof._id} sincronizado.`);
                 }
-
-                // Actualizar alumnos
-                const alumnosActualizados = materiaDictada.alumnos.map((alumnoSub) =>
-                    alumnoSub.dni === dniViejo
-                        ? {
-                            ...alumnoSub,
-                            nombre,
-                            dni,
-                            notas: actualizarNotas(alumnoSub.notas, materiaAlumno.notas),
-                            asistencias: actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias, next),
-                        }
-                        : alumnoSub
-                );
-
-                // Actualizar profesor si cambió (con validaciones)
-                let profActual = materiaDictada.profesor;
-                if (
-                    materiaAlumno?.profesor &&
-                    materiaAlumno.profesor?.nombre &&
-                    materiaDictada.profesor?.nombre &&
-                    materiaAlumno.profesor.nombre !== materiaDictada.profesor.nombre
-                ) {
-                    profActual = materiaAlumno.profesor;
-                    huboCambios = true;
-                }
-
-                // Chequear cambios en alumnos
-                if (JSON.stringify(alumnosActualizados) !== JSON.stringify(materiaDictada.alumnos)) {
-                    huboCambios = true;
-                }
-
-                return { ...materiaDictada, alumnos: alumnosActualizados, profesor: profActual };
-            });
-
-            if (huboCambios) {
-                prof.materiasDictadas = materiasNuevas;
-                prof.markModified("materiasDictadas");
-                await prof.save({ validateBeforeSave: false });
-                console.log(`✅ Profesor ${prof.nombre || prof._id} sincronizado.`);
-            }
-        })
-    );
+            })
+        );
+    } catch (err) {
+        next(err); // pasa cualquier error al middleware
+    }
 };
+
 
 
 

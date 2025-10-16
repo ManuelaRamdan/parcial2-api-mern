@@ -1,23 +1,27 @@
 [
-    { //68cdd53a7a9194521b3d571c
+    { 
         "nombre": "Matemática", 
         "curso": "1A", 
-        "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5715" }, "nombre": "Profe 1" } 
+        "profesor": {  "nombre": "Profe 1" }, 
+        "alumnos": [{"nombre": "Alumno 1", "dni": "1"}, {"nombre": "Alumno 2", "dni": "2"}]
     },
-    { //68cdd53a7a9194521b3d571d
+    { 
         "nombre": "Historia", 
         "curso": "1B", 
-        "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5716" }, "nombre": "Profe 2" } 
+        "profesor": {  "nombre": "Profe 2" } ,
+        "alumnos": [{"nombre": "Juan", "dni": "33"}]
     },
-    {  //68cdd53a7a9194521b3d571e
+    {  
         "nombre": "Lengua", 
         "curso": "1A", 
-        "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5717" }, "nombre": "Profe 3" } 
+        "profesor": { "nombre": "Profe 3" }, 
+         "alumnos": [{"nombre": "Alumno 1", "dni": "1"}, {"nombre": "Alumno 2", "dni": "2"}]
     },
-    { //68cdd53a7a9194521b3d571f
+    { 
         "nombre": "Geografía", 
         "curso": "1B", 
-        "profesor": { "id": { "$oid": "68cdd3317a9194521b3d5716" }, "nombre": "Profe 2" } 
+        "profesor": {  "nombre": "Profe 2" },
+        "alumnos": [{"nombre": "Juan", "dni": "33"}]
     }
 
 ]
