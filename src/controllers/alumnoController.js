@@ -1,7 +1,7 @@
 // src/controllers/usuarioController.js
 const Alumno = require("../models/alumnoModel");
 const { actualizarAlumno } = require("../service/alumnoService");
-
+const Materia = require("../models/materiaModel");
 
 
 const getAllAlumnos = async (req, res, next) => {
@@ -37,17 +37,54 @@ const getAlumnoById = async (req, res, next) => {
 
 const createAlumno = async (req, res, next) => {
     try {
-        const nuevoAlumno = new Alumno(req.body);
+        const { nombre, dni, curso } = req.body;
+
+        if (!nombre || !dni || !curso) {
+            const error = new Error("Faltan datos obligatorios: nombre, dni o curso.");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Buscar las materias del curso
+        const materiasCurso = await Materia.find({ curso });
+
+        if (!materiasCurso.length) {
+            const error = new Error(`No se encontraron materias para el curso ${curso}.`);
+            error.statusCode = 404;
+            throw error;
+        }
+
+        // Crear la estructura de materias para el alumno
+        const materiasAlumno = materiasCurso.map(materia => ({
+            nombre: materia.nombre,
+            profesor: {
+                nombre: materia.profesor?.nombre || "Sin asignar"
+            },
+            notas: [],
+            asistencias: []
+        }));
+
+        // Crear y guardar el alumno
+        const nuevoAlumno = new Alumno({
+            nombre,
+            dni,
+            curso,
+            materias: materiasAlumno
+        });
+
         await nuevoAlumno.save();
-        //201 -> Petición exitosa. Se ha creado un nuevo recurso como resultado de ello
-        res.status(201).json(nuevoAlumno);
+
+        // 201 -> Petición exitosa. Se ha creado un nuevo recurso
+        res.status(201).json({
+            message: "Alumno creado correctamente",
+            alumno: nuevoAlumno
+        });
     } catch (err) {
-        //400 -> La solicitud no se pudo completar debido a un error del cliente
-        const error = new Error("Error al crear un alumno, verifique los datos.");
-        error.statusCode = 400;
-        next(error);
+        console.error("❌ Error al crear el alumno:", err.message);
+        next(err);
     }
 };
+
 
 const updateAlumno = async (req, res, next) => {
     try {
@@ -78,41 +115,6 @@ const updateAlumno = async (req, res, next) => {
     }
 };
 
-
-
-
-
-
-
-
-
-/*const getDetalleMateriaByMateriaId = async (req, res, next) => {
-    try {
-        const alumno = await Alumno.findById(req.params.id);
-        if (!alumno) {
-            const error = new Error("Alumno no encontrado");
-            error.statusCode = 404;
-            throw error;
-        }
- 
-        const materia = alumno.materias.find(m => m.materiaId.toString() === req.params.materiaId);
-        if (!materia) {
-            const error = new Error("Materia no encontrada");
-            error.statusCode = 404;
-            throw error;
-        }
- 
-        res.json({
-            nombre: materia.nombre,
-            profesor: materia.profesor,
-            notas: materia.notas,
-            asistencias: materia.asistencias
-        });
-    } catch (err) {
-        next(err);
- 
-    }
-};*/
 
 
 

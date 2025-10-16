@@ -11,7 +11,5 @@ router.get("/", [authenticateToken, isAdmin],usuarioController.getAllUsuarios);
 router.get("/:id", [authenticateToken, isAdmin], usuarioController.getUsuarioById);
 router.post("/register", [authenticateToken, isAdmin], usuarioController.createUsuario);
 router.post("/login", usuarioController.loginUsuario);
-router.put("/:id", [authenticateToken, isAdmin], usuarioController.updateUsuario);
-router.delete("/:id", [authenticateToken, isAdmin], usuarioController.deleteUsuario);
 
 module.exports = router;
