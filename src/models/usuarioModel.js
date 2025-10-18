@@ -16,6 +16,7 @@ const usuarioSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   rol: { type: String, enum: ["padre", "profesor", "administrador"], required: true },
+  profesorId: { type: mongoose.Schema.Types.ObjectId, ref: "Profesor" },//AGREGADO
   hijos: [{ type: String }] // 
 });
 

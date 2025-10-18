@@ -33,9 +33,28 @@ const getMateriaById = async (req, res, next) => {
     }
 };
 
+const getMateriaByProfe = async (req, res, next) => {
+    try {
+        const profesorId = req.user.profesorId;
+        console.log(profesorId);
+        const materias = await Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
+        if (!materias || materias.length === 0) {
+            const error = new Error("No se encontraron materias para este profesor");
+            error.statusCode = 404;
+            throw error;
+        } else {
+            res.json(materias);
+        }
+    } catch (err) {
+        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
+        next(err);
+    }
+};
+
 const getMateriaByIdProfe = async (req, res, next) => {
     try {
         const profesorId = req.params.id;
+        console.log(profesorId);
         const materias = await Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
         if (!materias || materias.length === 0) {
             const error = new Error("No se encontraron materias para este profesor");
@@ -107,6 +126,7 @@ const deleteMateria = async (req, res, next) => {
 module.exports = {
     getAllMaterias,
     getMateriaById,
+    getMateriaByProfe,
     getMateriaByIdProfe,
     createMateria,
     updateMateria,
