@@ -136,7 +136,7 @@ const actualizarDniEnUsuarios = async (dniViejo, dniNuevo) => {
     );
 };
 
-// 🔸 Actualizar datos en profesores
+// Actualizar datos en profesores
 const actualizarProfesores = async (alumno, dniViejo, next) => {
     const { nombre, dni, materias } = alumno;
 
@@ -156,7 +156,7 @@ const actualizarProfesores = async (alumno, dniViejo, next) => {
                         return materiaDictada;
                     }
 
-                    // 🔹 Actualizar solo el alumno correspondiente
+                    //Actualizar solo el alumno correspondiente
                     const alumnosActualizados = materiaDictada.alumnos.map((alumnoSub) =>
                         alumnoSub.dni === dniViejo
                             ? {
