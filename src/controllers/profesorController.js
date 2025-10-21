@@ -28,11 +28,9 @@ const getProfesorById = async (req, res, next) => {
       const error = new Error("Profesor no encontrado");
       error.statusCode = 404;
       throw error;
-
-    } 
-      
-    res.json(profesor);
-    
+    } else {
+      res.json(profesor);
+    }
 
   } catch (err) {
     //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
