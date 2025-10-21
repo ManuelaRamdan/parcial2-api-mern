@@ -1,14 +1,20 @@
 // src/controllers/usuarioController.js
 const Profesor = require("../models/profesorModel");
 
+const paginate = require("../utils/paginar");
+
 const getAllProfesores = async (req, res, next) => {
   try {
-    const profesores = await Profesor.find();
-    res.json(profesores);
+    const result = await paginate(Profesor, req);
+    res.json({
+      profesores: result.data,
+      pagination: result.pagination
+    });
   } catch (err) {
     next(err);
   }
 };
+
 
 
 

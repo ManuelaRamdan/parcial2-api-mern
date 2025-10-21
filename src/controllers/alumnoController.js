@@ -1,17 +1,24 @@
 // src/controllers/usuarioController.js
 const Alumno = require("../models/alumnoModel");
+const { actualizarAlumno } = require("../service/alumnoService");
+const Materia = require("../models/materiaModel");
 
-
+const paginate = require("../utils/paginar");
 
 const getAllAlumnos = async (req, res, next) => {
     try {
-        const alumnos = await Alumno.find();
-        res.json(alumnos);
+        const result = await paginate(Alumno, req, { sort: { nombre: 1 } });
+        res.json({
+            alumnos: result.data,
+            pagination: result.pagination
+        });
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
+
+
+
 
 //404 -> El servidor no pudo encontrar el contenido solicitado
 
@@ -36,62 +43,84 @@ const getAlumnoById = async (req, res, next) => {
 
 const createAlumno = async (req, res, next) => {
     try {
-        const nuevoAlumno = new Alumno(req.body);
+        const { nombre, dni, curso } = req.body;
+
+        if (!nombre || !dni || !curso) {
+            const error = new Error("Faltan datos obligatorios: nombre, dni o curso.");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Buscar las materias del curso
+        const materiasCurso = await Materia.find({ curso });
+
+        if (!materiasCurso.length) {
+            const error = new Error(`No se encontraron materias para el curso ${curso}.`);
+            error.statusCode = 404;
+            throw error;
+        }
+
+        // Crear la estructura de materias para el alumno
+        const materiasAlumno = materiasCurso.map(materia => ({
+            nombre: materia.nombre,
+            profesor: {
+                nombre: materia.profesor?.nombre || "Sin asignar"
+            },
+            notas: [],
+            asistencias: []
+        }));
+
+        // Crear y guardar el alumno
+        const nuevoAlumno = new Alumno({
+            nombre,
+            dni,
+            curso,
+            materias: materiasAlumno
+        });
+
         await nuevoAlumno.save();
-        //201 -> Petición exitosa. Se ha creado un nuevo recurso como resultado de ello
-        res.status(201).json(nuevoAlumno);
+
+        // 201 -> Petición exitosa. Se ha creado un nuevo recurso
+        res.status(201).json({
+            message: "Alumno creado correctamente",
+            alumno: nuevoAlumno
+        });
     } catch (err) {
-        //400 -> La solicitud no se pudo completar debido a un error del cliente
-        const error = new Error("Error al crear un alumno, verifique los datos.");
-        error.statusCode = 400;
-        next(error);
+        console.error("❌ Error al crear el alumno:", err.message);
+        next(err);
     }
 };
 
 
 const updateAlumno = async (req, res, next) => {
     try {
-        const alumno = await Alumno.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-        //404 -> El servidor no pudo encontrar el contenido solicitado
-        if (!alumno) {
-            const error = new Error("Alumno no encontrado");
-            error.statusCode = 404;
+        const { id } = req.params;
+        const actualizarDatos = req.body;
+
+        // Validar que no se modifique curso ni profesor desde aquí
+        if (actualizarDatos.curso || actualizarDatos.materias?.some(m => m.profesor)) {
+            const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, se debe hacer desde Materias");
+            error.statusCode = 422;
             throw error;
         }
-        res.json(alumno);
+
+        if (Array.isArray(actualizarDatos.materias)) {
+            const faltaNombre = actualizarDatos.materias.some(m => !m.nombre);
+            if (faltaNombre) {
+                const error = new Error("Cada materia que se quiera modificar debe tener el campo 'nombre'");
+                error.statusCode = 422;
+                throw error;
+            }
+        }
+
+        const alumnoActualizado = await actualizarAlumno(id, actualizarDatos, next);
+
+        res.json({ message: "Alumno actualizado correctamente", alumno: alumnoActualizado });
     } catch (err) {
         next(err);
     }
 };
 
-
-const getDetalleMateriaByMateriaId = async (req, res, next) => {
-    try {
-        const alumno = await Alumno.findById(req.params.id);
-        if (!alumno) {
-            const error = new Error("Alumno no encontrado");
-            error.statusCode = 404;
-            throw error;
-        }
-
-        const materia = alumno.materias.find(m => m.materiaId.toString() === req.params.materiaId);
-        if (!materia) {
-            const error = new Error("Materia no encontrada");
-            error.statusCode = 404;
-            throw error;
-        }
-
-        res.json({
-            nombre: materia.nombre,
-            profesor: materia.profesor,
-            notas: materia.notas,
-            asistencias: materia.asistencias
-        });
-    } catch (err) {
-        next(err);
-
-    }
-};
 
 
 
@@ -119,6 +148,5 @@ module.exports = {
     getAlumnoById,
     createAlumno,
     updateAlumno,
-    getDetalleMateriaByMateriaId,
     deleteAlumno
 };

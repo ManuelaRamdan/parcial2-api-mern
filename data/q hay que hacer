@@ -1,0 +1,17 @@
+admin
+- *alta alumno
+baja alumno como lo hago?
+*modificacion alumno
+
+    materias:
+        *mostrar todas las materias*,  -> (paginados x curso) es posible?
+
+
+    profe:
+        
+        *mostrar datos del profe 
+        *mostrar todos los profes -> paginados falta
+
+habilitar carga de notas solo el campo, tipo cuando termina el cuatrimestre no podes modificar esas notas
+    se puede en notas poner un campo habilitado? true/false
+

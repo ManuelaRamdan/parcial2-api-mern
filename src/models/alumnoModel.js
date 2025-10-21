@@ -5,10 +5,8 @@ const alumnoSchema = new mongoose.Schema({
   curso: { type: String, required: true },
   materias: [
     {
-      materiaId: { type: mongoose.Schema.Types.ObjectId, ref: "Materia", required: true },
       nombre: { type: String, required: true },
       profesor: {
-        _id: { type: mongoose.Schema.Types.ObjectId, ref: "Profesor", required: true },
         nombre: { type: String, required: true }
       },
       notas: [

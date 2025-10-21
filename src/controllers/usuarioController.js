@@ -3,18 +3,22 @@ const Usuario = require("../models/usuarioModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-// Obtener todos
+
+
+const paginate = require("../utils/paginar");
+
 const getAllUsuarios = async (req, res, next) => {
     try {
-        const usuarios = await Usuario.find();
-        res.json(usuarios);
+        const result = await paginate(Usuario, req);
+        res.json({
+            usuarios: result.data,
+            pagination: result.pagination
+        });
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-
         next(err);
-
     }
 };
+
 
 // Obtener por ID
 
@@ -81,48 +85,6 @@ const createUsuario = async (req, res, next) => {
 };
 
 
-const updateUsuario = async (req, res, next) => {
-    try {
-        const usuario = await Usuario.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
-
-        if (!usuario) {
-            const error = new Error("Usuario no encontrado");
-            error.statusCode = 404;
-            throw error;
-
-        }
-
-        // Podés hacer algo similar para otras colecciones si es necesario
-
-        res.json(usuario);
-    } catch (err) {
-        next(err);
-    }
-};
-
-// Eliminar
-const deleteUsuario = async (req, res, next) => {
-    try {
-        const usuario = await Usuario.findByIdAndDelete(req.params.id);
-        if (!usuario) {
-            //404 -> El servidor no pudo encontrar el contenido solicitado
-            const error = new Error("Usuario no encontrado");
-            error.statusCode = 404;
-            throw error;
-        } else {
-            res.json({ msg: `Usuario con id ${req.params.id} eliminado correctamente` });
-        }
-
-    } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
-        next(err);
-    };
-
-};
 const loginUsuario = async (req, res, next) => {
     try {
         const { email, password } = req.body;
@@ -172,8 +134,6 @@ module.exports = {
     getAllUsuarios,
     getUsuarioById,
     createUsuario,
-    updateUsuario,
-    deleteUsuario,
     loginUsuario
 };
 
