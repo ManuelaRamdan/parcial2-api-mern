@@ -145,7 +145,7 @@ const loginUsuario = async (req, res, next) => {
 
         // Generar token JWT
         const token = jwt.sign(
-            { id: usuario._id, email: usuario.email, rol: usuario.rol },
+            { id: usuario._id, email: usuario.email, rol: usuario.rol, profesorId: usuario.profesorId ? usuario.profesorId.toString() : null, nombre: usuario.nombre },
             process.env.JWT_SECRET, // Ver .env o variable de entorno en produccion
             { expiresIn: "1h" } // 15 seg. para probar. Para que expire en 1 hora, colocar '1h'
         );
@@ -158,6 +158,8 @@ const loginUsuario = async (req, res, next) => {
                 nombre: usuario.nombre,
                 email: usuario.email,
                 rol: usuario.rol,
+                profesorId: usuario.profesorId ? usuario.profesorId.toString() : null,
+                nombre: usuario.nombre
             }
         });
     } catch (err) {

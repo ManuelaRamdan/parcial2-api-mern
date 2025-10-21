@@ -19,4 +19,13 @@ const isPadre = (req, res, next) => {
     next();
 };
 
-module.exports = { isAdmin, isPadre };
+const isProfe = (req, res, next) => {
+    if (req.user.rol !== 'profesor') {
+        const error = new Error("Acceso denegado. Se requieren permisos de profesor");
+        error.statusCode = 403;
+        return next(error);
+    }
+    next();
+};
+
+module.exports = { isAdmin, isPadre, isProfe };
