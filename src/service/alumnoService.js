@@ -107,7 +107,7 @@ const sincronizarAlumnoConColecciones = async (alumno, dniViejo, next) => {
 
     await actualizarDniEnUsuarios(dniViejo, dni);
     await actualizarProfesores(alumno, dniViejo, next);
-    await actualizarAlumnoEnMaterias (dniViejo, alumno.nombre, alumno.dni);
+    await actualizarAlumnoEnMaterias(dniViejo, alumno.nombre, alumno.dni);
 
 };
 
@@ -141,55 +141,103 @@ const actualizarProfesores = async (alumno, dniViejo, next) => {
     const { nombre, dni, materias } = alumno;
 
     try {
-        // Buscar profesores donde el alumno está registrado
+        //obtener todos los documentos Profesor cuyo array materiasDictadas contenga un subdocumento alumnos con dni === dniViejo
         const profesores = await Profesor.find({ "materiasDictadas.alumnos.dni": dniViejo });
 
+        //usa Promise.all para actualizar múltiples profesores en paralelo.
+        // promise para ejecutar varias operaciones asincronicas una por profesor y esperar a que todas terminen para seguir
         await Promise.all(
-            profesores.map(async (prof) => {
-
-                let huboCambios = false;
-
-                const materiasNuevas = prof.materiasDictadas.map((materiaDictada) => {
-                    const materiaAlumno = materias.find((m) => m.nombre === materiaDictada.nombre);
-                    if (!materiaAlumno) {
-                        console.warn(`⚠️ No se encontró la materia ${materiaDictada.nombre} para el alumno ${nombre}`);
-                        return materiaDictada;
-                    }
-
-                    //Actualizar solo el alumno correspondiente
-                    const alumnosActualizados = materiaDictada.alumnos.map((alumnoSub) =>
-                        alumnoSub.dni === dniViejo
-                            ? {
-                                ...alumnoSub,
-                                nombre,
-                                dni,
-                                notas: actualizarNotas(alumnoSub.notas, materiaAlumno.notas),
-                                asistencias: actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias, next),
-                            }
-                            : alumnoSub
-                    );
-
-                    // Chequear si hubo cambios
-                    if (JSON.stringify(alumnosActualizados) !== JSON.stringify(materiaDictada.alumnos)) {
-                        huboCambios = true;
-                    }
-
-                    // 🔹 No modificar profesor
-                    return { ...materiaDictada, alumnos: alumnosActualizados };
-                });
-
-                if (huboCambios) {
-                    prof.materiasDictadas = materiasNuevas;
-                    prof.markModified("materiasDictadas");
-                    await prof.save({ validateBeforeSave: false });
-                    console.log(`✅ Profesor ${prof.nombre || prof._id} sincronizado.`);
-                }
-            })
+            profesores.map(prof => procesarProfesor(prof, alumno, dniViejo, next))
         );
+
+        // profesores es un array de todos los profesores donde aparece ese alumno.
+        // con map, se va profe por profesor y se ejecuta la funcion procesarProfesor que devuelve una promesa que resuelve cuando el await prof.save() termina o lanza un error.
+        // Termina map y te queda un array de promesas pendientes
+        // promise. all recibe ese array y espera que se resulvan las promesas pendientes.
+        // cuando termina devuelve el array con los resultados que son underfined pq procesarProfesor no devuelve nada, es solo para saber que no hubo error
+        // si hay un error se lo lanza al middelware de errores
+
+        // sin promise.all, llega el primer prof.save y termina sin pasar por el siguiente promesa, pero con promise.all todos los prof.save se hacen el paralelo no secuencial 
+
     } catch (err) {
         next(err); // pasa cualquier error al middleware
     }
 };
+
+const procesarProfesor = async (prof, alumno, dniViejo, next) => {
+    const { nombre, dni, materias } = alumno;
+    let huboCambios = false;
+
+    //prof.materiasDictadas es un array con todas las materias que dicta ese profesor
+    //map devuelve un nuevo array con los resultados de la funcion y lo guarda en materias nuevas 
+    const materiasNuevas = prof.materiasDictadas.map(materiaDictada => {
+        //busca el primer elemento que cumpla esa condicion
+        const materiaAlumno = materias.find(m => m.nombre === materiaDictada.nombre);
+
+        // con ... copia todas las propiedades de materiaDictada en materiaActualizada permitiendo modificar la copia 
+        let materiaActualizada = { ...materiaDictada };
+
+        //si el alumno cursa ese materia 
+        if (materiaAlumno) {
+            // materiaDictada.alumnos es el array de alumnos que tiene esta materia en el profesor
+            // map -> recorre cada alumno (alumnoSub) y genera un nuevo array (nuevosAlumnos).
+            const nuevosAlumnos = materiaDictada.alumnos.map(alumnoSub => {
+
+                // con ... copia todas las propiedades de alumnoSub en alumnoActualizado permitiendo modificar la copia 
+                let alumnoActualizado = { ...alumnoSub };
+
+                const esElAlumno = alumnoSub.dni === dniViejo;
+                if (esElAlumno) {
+
+                    const nuevasNotas = actualizarNotas(alumnoSub.notas, materiaAlumno.notas);
+                    const nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias, next);
+
+                    //_.isEqual es una función de Lodash -> libreria de js
+                    //comparar dos valores en profundidad y devuelve true si son iguales, por eso tiene !
+                    //
+                    //cambio -> indica si hay algo que actualizar en el alumno
+                    const cambio =
+                        alumnoSub.nombre !== nombre ||
+                        alumnoSub.dni !== dni ||
+                        !_.isEqual(alumnoSub.notas, nuevasNotas) ||
+                        !_.isEqual(alumnoSub.asistencias, nuevasAsistencias);
+
+                    if (cambio) {
+                        huboCambios = true;
+
+                        // alumnoActualizado es un nuevo objeto que mantiene todo lo que no cambió y actualiza lo que cambió.
+
+                        alumnoActualizado = {
+                            // copiamos las propiedades de alumnoSub al nuevo objeto y despues las sobre escribimos con las nuevas cosas
+                            ...alumnoSub,
+                            nombre,
+                            dni,
+                            notas: nuevasNotas,
+                            asistencias: nuevasAsistencias,
+                        };
+                    }
+                }
+
+                return alumnoActualizado;
+            });
+
+            materiaActualizada = { ...materiaDictada, alumnos: nuevosAlumnos };
+        }
+
+        return materiaActualizada;
+    });
+
+    if (huboCambios) {
+        // reemplazamos el array original (prof.materiasDictadas) por el nuevo
+        prof.materiasDictadas = materiasNuevas;
+        // se usa markModified pq cuando se hace cambios en algo anidados mongoose no los guarda, pero pobiendo eso sabe que os tiene que guardar cuando se haga el prof.save()
+        prof.markModified("materiasDictadas");
+        await prof.save();
+    }
+};
+
+
+
 
 module.exports = { actualizarAlumno };
 
