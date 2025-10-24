@@ -20,28 +20,33 @@ Para correr el proyecto se necesita tener instalado:
 
 ### 2. Instalación del proyecto
 - Clonar el repositorio:
+```text
 git clone https://github.com/ManuelaRamdan/parcial2-api-mern.git
-
+```
 - Acceder a la carpeta del proyecto:
+```text
 cd parcial2-api-mern
-
+```
 - Instalar las dependencias:
+```text
 npm install
-
+```
 ### 3. Variables de entorno
-
+```text
 DB_URL=mongodb+srv://manuelaRamdan_user:9iPpm7WkPjrHcEhJ@cluster0.loupu0f.mongodb.net/academa?retryWrites=true&w=majority&appName=Cluster0
 PORT=3000
 JWT_SECRET=root
-
+```
 ### 4. Modos de ejecución
 
 - Modo desarrollo (reinicio automático al guardar cambios):
+```text
 npm run devstart
-
+```
 - Modo producción:
+```text
 npm start
-
+```
 ## Estructura del proyecto
 ```text
 📦 parcial2-api-mern
@@ -75,3 +80,4 @@ npm start
 ├── README.md          # Documentación general del proyecto
 |__src/index.js       # Inicio del servidor
 
+```
