@@ -29,19 +29,21 @@ cd parcial2-api-mern
 npm install
 
 ### 3. Variables de entorno
-
+```text
 DB_URL=mongodb+srv://manuelaRamdan_user:9iPpm7WkPjrHcEhJ@cluster0.loupu0f.mongodb.net/academa?retryWrites=true&w=majority&appName=Cluster0
 PORT=3000
 JWT_SECRET=root
-
+```
 ### 4. Modos de ejecución
 
 - Modo desarrollo (reinicio automático al guardar cambios):
+```text
 npm run devstart
-
+```
 - Modo producción:
+```text
 npm start
-
+```
 ## Estructura del proyecto
 ```text
 📦 parcial2-api-mern
@@ -74,4 +76,4 @@ npm start
 ├── package.json       # Dependencias y scripts del proyecto
 ├── README.md          # Documentación general del proyecto
 |__src/index.js       # Inicio del servidor
-
+```
