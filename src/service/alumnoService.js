@@ -14,10 +14,20 @@ const actualizarAlumno = async (id, actualizarDatos, next) => {
         }
 
         const dniViejo = alumno.dni;
+        if (actualizarDatos.dni && actualizarDatos.dni !== dniViejo) {
+            const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni });
+            if (alumnoExistente) {
+                const error = new Error(`Ya existe un alumno con el DNI ${actualizarDatos.dni}.`);
+                error.statusCode = 409;
+                throw error;
+            }
+            alumno.dni = actualizarDatos.dni;
+        }
+
 
         // Actualizar solo nombre y dni
         if (actualizarDatos.nombre) alumno.nombre = actualizarDatos.nombre;
-        if (actualizarDatos.dni) alumno.dni = actualizarDatos.dni;
+
 
         // Actualizar materias (notas y asistencias)
         if (Array.isArray(actualizarDatos.materias)) {

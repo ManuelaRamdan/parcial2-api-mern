@@ -81,3 +81,8 @@ npm start
 |__src/index.js       # Inicio del servidor
 
 ```
+## Documentación de los endpoints
+
+```text
+https://documenter.getpostman.com/view/48221875/2sB3WjzPE4
+```

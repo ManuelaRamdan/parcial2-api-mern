@@ -10,7 +10,7 @@ const {isAdmin} = require("./../middlewares/verificarRolMiddelware");
 router.get("/profe", [authenticateToken, isProfe], materiaController.getMateriaByProfe);//PARA PROFESORES TIRA SUS MATERIAS ID SACADO DEL TOKEN
 router.get("/profe/:id", [authenticateToken, isAdmin], materiaController.getMateriaByIdProfe);//PARA ADMINS PONES EL ID DE PROFE QUE QUERES VER
 
-router.get("/", materiaController.getAllMaterias);
-router.get("/:id", materiaController.getMateriaById);
+router.get("/", [authenticateToken, isAdmin], materiaController.getAllMaterias);
+router.get("/:id", [authenticateToken, isAdmin], materiaController.getMateriaById);
 
 module.exports = router;

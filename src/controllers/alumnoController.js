@@ -42,12 +42,20 @@ const getAlumnoById = async (req, res, next) => {
 
 
 const createAlumno = async (req, res, next) => {
+    //que se ponga el alumno a las materias y profesores con esas meterias
     try {
         const { nombre, dni, curso } = req.body;
 
         if (!nombre || !dni || !curso) {
             const error = new Error("Faltan datos obligatorios: nombre, dni o curso.");
             error.statusCode = 400;
+            throw error;
+        }
+
+        const alumnoExistente = await Alumno.findOne({ dni });
+        if (alumnoExistente) {
+            const error = new Error(`Ya existe un alumno registrado con el DNI ${dni}.`);
+            error.statusCode = 409; // 409 = Conflicto (recurso duplicado)
             throw error;
         }
 
@@ -86,7 +94,6 @@ const createAlumno = async (req, res, next) => {
             alumno: nuevoAlumno
         });
     } catch (err) {
-        console.error("❌ Error al crear el alumno:", err.message);
         next(err);
     }
 };
@@ -125,6 +132,8 @@ const updateAlumno = async (req, res, next) => {
 
 
 const deleteAlumno = async (req, res, next) => {
+    //cambie el estado a 0 y se sincroniza con el resto
+    //solo muestre los alumnos que estan activos
     try {
         const alumno = await Alumno.findByIdAndDelete(req.params.id);
         if (!alumno) {
