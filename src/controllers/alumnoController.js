@@ -3,6 +3,7 @@ const Alumno = require("../models/alumnoModel");
 const { actualizarAlumno } = require("../service/alumnoService");
 const Materia = require("../models/materiaModel");
 
+
 const paginate = require("../utils/paginar");
 
 const getAllAlumnos = async (req, res, next) => {

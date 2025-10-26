@@ -2,10 +2,10 @@ const Alumno = require("../models/alumnoModel");
 const Profesor = require("../models/profesorModel");
 const Materia = require("../models/materiaModel");
 const Usuario = require("../models/usuarioModel");
-
+const _ = require("lodash");
 
 const actualizarAlumno = async (id, actualizarDatos, next) => {
-    try {
+    
         const alumno = await Alumno.findById(id);
         if (!alumno) {
             const error = new Error("Alumno no encontrado");
@@ -49,9 +49,7 @@ const actualizarAlumno = async (id, actualizarDatos, next) => {
         await sincronizarAlumnoConColecciones(alumno, dniViejo, next);
 
         return alumno;
-    } catch (err) {
-        next(err);
-    }
+
 };
 
 
@@ -115,9 +113,9 @@ const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas =
 const sincronizarAlumnoConColecciones = async (alumno, dniViejo, next) => {
     const { dni } = alumno;
 
-    await actualizarDniEnUsuarios(dniViejo, dni);
+    //await actualizarDniEnUsuarios(dniViejo, dni);
     await actualizarProfesores(alumno, dniViejo, next);
-    await actualizarAlumnoEnMaterias(dniViejo, alumno.nombre, alumno.dni);
+    //await actualizarAlumnoEnMaterias(dniViejo, alumno.nombre, alumno.dni);
 
 };
 
@@ -170,7 +168,7 @@ const actualizarProfesores = async (alumno, dniViejo, next) => {
         // sin promise.all, llega el primer prof.save y termina sin pasar por el siguiente promesa, pero con promise.all todos los prof.save se hacen el paralelo no secuencial 
 
     } catch (err) {
-        next(err); // pasa cualquier error al middleware
+        throw err; // pasa cualquier error al middleware
     }
 };
 
