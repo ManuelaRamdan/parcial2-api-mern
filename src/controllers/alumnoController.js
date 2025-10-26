@@ -1,6 +1,6 @@
 // src/controllers/usuarioController.js
 const Alumno = require("../models/alumnoModel");
-const { actualizarAlumno } = require("../service/alumnoService");
+const { actualizarAlumno, agregarAlumnoEnMaterias, agregarAlumnoEnProfesores } = require("../service/alumnoService");
 const Materia = require("../models/materiaModel");
 
 
@@ -89,6 +89,9 @@ const createAlumno = async (req, res, next) => {
 
         await nuevoAlumno.save();
 
+        await agregarAlumnoEnMaterias(nuevoAlumno);
+        await agregarAlumnoEnProfesores(nuevoAlumno);
+
         // 201 -> Petición exitosa. Se ha creado un nuevo recurso
         res.status(201).json({
             message: "Alumno creado correctamente",
@@ -105,7 +108,15 @@ const updateAlumno = async (req, res, next) => {
         const { id } = req.params;
         const actualizarDatos = req.body;
 
-        // Validar que no se modifique curso ni profesor desde aquí
+
+        const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni });
+        if (alumnoExistente) {
+            const error = new Error(`Ya existe un alumno registrado con el DNI ${actualizarDatos.dni}.`);
+            error.statusCode = 409; // 409 = Conflicto (recurso duplicado)
+            throw error;
+        }
+
+        // Validar que no se modifique curso ni profesor desde aca
         if (actualizarDatos.curso || actualizarDatos.materias?.some(m => m.profesor)) {
             const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, se debe hacer desde Materias");
             error.statusCode = 422;
@@ -133,25 +144,23 @@ const updateAlumno = async (req, res, next) => {
 
 
 const deleteAlumno = async (req, res, next) => {
-    //cambie el estado a 0 y se sincroniza con el resto
-    //solo muestre los alumnos que estan activos
     try {
-        const alumno = await Alumno.findByIdAndDelete(req.params.id);
-        if (!alumno) {
-            //404 -> El servidor no pudo encontrar el contenido solicitado
-            const error = new Error("Alumno no encontrado");
-            error.statusCode = 404;
-            throw error;
+        // Llamamos a actualizarAlumno, pasándole el campo activo: false
+        const alumnoActualizado = await actualizarAlumno(
+            req.params.id,
+            { activo: false },
+            next
+        );
 
-        } else {
-            res.json({ msg: `Alumno con id ${req.params.id} eliminado correctamente` });
-        }
-
+        res.json({
+            msg: `Alumno con id ${req.params.id} marcado como inactivo correctamente`,
+            alumno: alumnoActualizado
+        });
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
+
 
 module.exports = {
     getAllAlumnos,

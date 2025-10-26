@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const alumnoSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
-  curso: { type: String, required: true },
+  curso: { type: String},
   materias: [
     {
       nombre: { type: String, required: true },
@@ -24,7 +24,8 @@ const alumnoSchema = new mongoose.Schema({
       
     }
   ],
-  dni:{ type: String, required: true}
+  dni:{ type: String, required: true},
+  activo: { type: Boolean, default: true } 
 });
 
 const Alumno = mongoose.model("Alumno", alumnoSchema);

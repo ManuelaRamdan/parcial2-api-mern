@@ -13,6 +13,7 @@ const materiaShema = new mongoose.Schema({
         {
             nombre: { type: String, required: true },
             dni: { type: String, required: true },
+            activo: { type: Boolean, default: true } 
         }]
 });
 

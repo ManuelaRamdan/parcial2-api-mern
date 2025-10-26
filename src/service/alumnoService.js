@@ -5,50 +5,55 @@ const Usuario = require("../models/usuarioModel");
 const _ = require("lodash");
 
 const actualizarAlumno = async (id, actualizarDatos, next) => {
-    
-        const alumno = await Alumno.findById(id);
-        if (!alumno) {
-            const error = new Error("Alumno no encontrado");
-            error.statusCode = 404;
+
+    const alumno = await Alumno.findById(id);
+    if (!alumno) {
+        const error = new Error("Alumno no encontrado");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    if (actualizarDatos.hasOwnProperty('activo')) {
+        alumno.activo = actualizarDatos.activo;
+    }
+
+    const dniViejo = alumno.dni;
+    if (actualizarDatos.dni && actualizarDatos.dni !== dniViejo) {
+        const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni });
+        if (alumnoExistente) {
+            const error = new Error(`Ya existe un alumno con el DNI ${actualizarDatos.dni}.`);
+            error.statusCode = 409;
             throw error;
         }
-
-        const dniViejo = alumno.dni;
-        if (actualizarDatos.dni && actualizarDatos.dni !== dniViejo) {
-            const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni });
-            if (alumnoExistente) {
-                const error = new Error(`Ya existe un alumno con el DNI ${actualizarDatos.dni}.`);
-                error.statusCode = 409;
-                throw error;
-            }
-            alumno.dni = actualizarDatos.dni;
-        }
+        alumno.dni = actualizarDatos.dni;
+    }
 
 
-        // Actualizar solo nombre y dni
-        if (actualizarDatos.nombre) alumno.nombre = actualizarDatos.nombre;
+    // Actualizar solo nombre y dni
+    if (actualizarDatos.nombre) alumno.nombre = actualizarDatos.nombre;
 
 
-        // Actualizar materias (notas y asistencias)
-        if (Array.isArray(actualizarDatos.materias)) {
-            alumno.materias = alumno.materias.map((materia) => {
-                const materiaUpdate = actualizarDatos.materias.find(m => m.nombre === materia.nombre);
-                if (!materiaUpdate) return materia;
+    // Actualizar materias (notas y asistencias)
+    if (Array.isArray(actualizarDatos.materias)) {
+        alumno.materias = alumno.materias.map((materia) => {
+            const materiaUpdate = actualizarDatos.materias.find(m => m.nombre === materia.nombre);
+            if (!materiaUpdate) return materia;
 
-                return {
-                    ...materia,
-                    notas: actualizarNotas(materia.notas, materiaUpdate.notas),
-                    asistencias: actualizarAsistencias(materia.asistencias, materiaUpdate.asistencias, next),
-                };
-            });
-        }
+            return {
+                ...materia,
+                notas: actualizarNotas(materia.notas, materiaUpdate.notas),
+                asistencias: actualizarAsistencias(materia.asistencias, materiaUpdate.asistencias, next),
+            };
+        });
+    }
 
-        await alumno.save();
 
-        // Sincronizar cambios de nombre/dni en usuarios, materias y profesores
-        await sincronizarAlumnoConColecciones(alumno, dniViejo, next);
+    await alumno.save();
 
-        return alumno;
+    // Sincronizar cambios de nombre/dni en usuarios, materias y profesores
+    await sincronizarAlumnoConColecciones(alumno, dniViejo, next);
+
+    return alumno;
 
 };
 
@@ -113,19 +118,20 @@ const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas =
 const sincronizarAlumnoConColecciones = async (alumno, dniViejo, next) => {
     const { dni } = alumno;
 
-    //await actualizarDniEnUsuarios(dniViejo, dni);
+    await actualizarDniEnUsuarios(dniViejo, dni);
     await actualizarProfesores(alumno, dniViejo, next);
-    //await actualizarAlumnoEnMaterias(dniViejo, alumno.nombre, alumno.dni);
+    await actualizarAlumnoEnMaterias(dniViejo, alumno.nombre, alumno.dni, alumno.activo);
 
 };
 
-const actualizarAlumnoEnMaterias = async (dniViejo, nombreNuevo, dniNuevo) => {
+const actualizarAlumnoEnMaterias = async (dniViejo, nombreNuevo, dniNuevo, activo) => {
     await Materia.updateMany(
         { "alumnos.dni": dniViejo }, // Todas las materias donde está este alumno
         {
             $set: {
                 "alumnos.$[alumno].nombre": nombreNuevo,
-                "alumnos.$[alumno].dni": dniNuevo
+                "alumnos.$[alumno].dni": dniNuevo, 
+                "alumnos.$[alumno].activo": activo 
             }
         },
         {
@@ -146,7 +152,6 @@ const actualizarDniEnUsuarios = async (dniViejo, dniNuevo) => {
 
 // Actualizar datos en profesores
 const actualizarProfesores = async (alumno, dniViejo, next) => {
-    const { nombre, dni, materias } = alumno;
 
     try {
         //obtener todos los documentos Profesor cuyo array materiasDictadas contenga un subdocumento alumnos con dni === dniViejo
@@ -173,7 +178,7 @@ const actualizarProfesores = async (alumno, dniViejo, next) => {
 };
 
 const procesarProfesor = async (prof, alumno, dniViejo, next) => {
-    const { nombre, dni, materias } = alumno;
+    const { nombre, dni, materias, activo } = alumno;
     let huboCambios = false;
 
     //prof.materiasDictadas es un array con todas las materias que dicta ese profesor
@@ -207,6 +212,7 @@ const procesarProfesor = async (prof, alumno, dniViejo, next) => {
                     const cambio =
                         alumnoSub.nombre !== nombre ||
                         alumnoSub.dni !== dni ||
+                        alumnoSub.activo !== activo ||
                         !_.isEqual(alumnoSub.notas, nuevasNotas) ||
                         !_.isEqual(alumnoSub.asistencias, nuevasAsistencias);
 
@@ -220,6 +226,7 @@ const procesarProfesor = async (prof, alumno, dniViejo, next) => {
                             ...alumnoSub,
                             nombre,
                             dni,
+                            activo,
                             notas: nuevasNotas,
                             asistencias: nuevasAsistencias,
                         };
@@ -244,8 +251,72 @@ const procesarProfesor = async (prof, alumno, dniViejo, next) => {
     }
 };
 
+// Inserta al alumno recién creado dentro de las materias del curso
+const agregarAlumnoEnMaterias = async (alumno) => {
+    await Promise.all(
+        alumno.materias.map(async (materiaAlumno) => {
+            await Materia.updateOne(
+                { nombre: materiaAlumno.nombre, curso: alumno.curso },
+                {
+                    $push: {
+                        alumnos: {
+                            nombre: alumno.nombre,
+                            dni: alumno.dni,
+                            activo: alumno.activo,
+                            notas: [],
+                            asistencias: []
+                        }
+                    }
+                }
+            );
+        })
+    );
+};
+
+// Inserta al alumno en los profesores que dictan esas materias
+const agregarAlumnoEnProfesores = async (alumno) => {
+    const profesores = await Profesor.find({ "materiasDictadas.nombre": { $in: alumno.materias.map(m => m.nombre) } });
+
+    await Promise.all(
+        profesores.map(async (prof) => {
+            let huboCambios = false;
+
+            const nuevasMaterias = prof.materiasDictadas.map(materiaDictada => {
+                if (alumno.materias.some(m => m.nombre === materiaDictada.nombre)) {
+                    // Verificar si ya existe el alumno
+                    const yaExiste = materiaDictada.alumnos.some(a => a.dni === alumno.dni);
+                    if (!yaExiste) {
+                        huboCambios = true;
+                        return {
+                            ...materiaDictada,
+                            alumnos: [
+                                ...materiaDictada.alumnos,
+                                {
+                                    nombre: alumno.nombre,
+                                    dni: alumno.dni,
+                                    activo: alumno.activo,
+                                    notas: [],
+                                    asistencias: []
+                                }
+                            ]
+                        };
+                    }
+                }
+                return materiaDictada;
+            });
+
+            if (huboCambios) {
+                prof.materiasDictadas = nuevasMaterias;
+                prof.markModified("materiasDictadas");
+                await prof.save();
+            }
+        })
+    );
+};
 
 
 
-module.exports = { actualizarAlumno };
+
+
+module.exports = { actualizarAlumno, agregarAlumnoEnMaterias, agregarAlumnoEnProfesores };
 
