@@ -14,39 +14,60 @@ const actualizarAlumno = async (id, actualizarDatos, next) => {
         }
 
         const dniViejo = alumno.dni;
-        if (actualizarDatos.dni && actualizarDatos.dni !== dniViejo) {
-            const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni });
-            if (alumnoExistente) {
-                const error = new Error(`Ya existe un alumno con el DNI ${actualizarDatos.dni}.`);
-                error.statusCode = 409;
-                throw error;
+
+        // Detectar si es profesor (solo actualizar notas/asistencias)
+        const esProfesor = actualizarDatos.materias?.some(m => m.profesor);
+        
+        // Admin: actualizar nombre y dni
+        if (!esProfesor) {
+            if (actualizarDatos.dni && actualizarDatos.dni !== dniViejo) {
+                const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni });
+                if (alumnoExistente) {
+                    const error = new Error(`Ya existe un alumno con el DNI ${actualizarDatos.dni}.`);
+                    error.statusCode = 409;
+                    throw error;
+                }
+                alumno.dni = actualizarDatos.dni;
             }
-            alumno.dni = actualizarDatos.dni;
+
+            // Actualizar solo nombre y dni
+            if (actualizarDatos.nombre) alumno.nombre = actualizarDatos.nombre;
         }
-
-
-        // Actualizar solo nombre y dni
-        if (actualizarDatos.nombre) alumno.nombre = actualizarDatos.nombre;
-
 
         // Actualizar materias (notas y asistencias)
         if (Array.isArray(actualizarDatos.materias)) {
             alumno.materias = alumno.materias.map((materia) => {
-                const materiaUpdate = actualizarDatos.materias.find(m => m.nombre === materia.nombre);
+                // Encontrar la materia que se quiere actualizar
+                const materiaUpdate = actualizarDatos.materias.find((m) => {
+                    if (esProfesor) {
+                        // Para profesor: validar _id, curso y profesor
+                        return (
+                        m._id.toString() === materia._id.toString() &&
+                        m.curso === materia.curso &&
+                        m.profesor === materia.profesor.nombre
+                        );
+                    } else {
+                        // Para admin: coincidir por nombre
+                        return m.nombre === materia.nombre;
+                    }
+                });
+
                 if (!materiaUpdate) return materia;
 
+                // Actualizar notas y asistencias según corresponda
                 return {
-                    ...materia,
-                    notas: actualizarNotas(materia.notas, materiaUpdate.notas),
-                    asistencias: actualizarAsistencias(materia.asistencias, materiaUpdate.asistencias, next),
+                ...materia,
+                notas: actualizarNotas(materia.notas, materiaUpdate.notas),
+                asistencias: actualizarAsistencias(materia.asistencias, materiaUpdate.asistencias, next),
                 };
             });
         }
 
         await alumno.save();
 
+        // Sincronizar cambios solo si es admin
         // Sincronizar cambios de nombre/dni en usuarios, materias y profesores
-        await sincronizarAlumnoConColecciones(alumno, dniViejo, next);
+        if (!esProfesor) await sincronizarAlumnoConColecciones(alumno, dniViejo, next);
 
         return alumno;
     } catch (err) {

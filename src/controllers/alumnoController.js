@@ -101,9 +101,36 @@ const createAlumno = async (req, res, next) => {
 
 const updateAlumno = async (req, res, next) => {
     try {
-        const { id } = req.params;
-        const actualizarDatos = req.body;
+        const { id, materiaid, curso } = req.params;
+        //const actualizarDatos = req.body;
+        const datosBody = req.body;
 
+        let actualizarDatos;
+
+        if (materiaid && curso) {
+            // Profesor: solo puede actualizar notas/asistencias
+            actualizarDatos = {
+                materias: [
+                {
+                    _id: materiaid,
+                    curso,
+                    profesor: req.user.nombre, // pasamos nombre del profe para validar en el servicio
+                    notas: datosBody.nuevaNota ? [datosBody.nuevaNota] : undefined,
+                    asistencias: datosBody.nuevaAsistencia ? [datosBody.nuevaAsistencia] : undefined,
+                },
+                ],
+            };
+        } else {
+             // Admin: puede actualizar todo
+            if (datosBody.curso || datosBody.materias?.some(m => m.profesor)) {
+                const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, se debe hacer desde Materias");
+                error.statusCode = 422;
+                throw error;
+            }
+            actualizarDatos = datosBody;
+        }
+        
+        /*
         // Validar que no se modifique curso ni profesor desde aquí
         if (actualizarDatos.curso || actualizarDatos.materias?.some(m => m.profesor)) {
             const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, se debe hacer desde Materias");
@@ -119,6 +146,8 @@ const updateAlumno = async (req, res, next) => {
                 throw error;
             }
         }
+        */
+        
 
         const alumnoActualizado = await actualizarAlumno(id, actualizarDatos, next);
 
@@ -128,7 +157,51 @@ const updateAlumno = async (req, res, next) => {
     }
 };
 
+/*const updateNotasAsistencias = async (req, res, next) => {
+    try {
+        const { id, materiaid, curso } = req.params;
+        const { nuevaNota, nuevaAsistencia } = req.body;
+        const profesorNombre = req.user.nombre;
 
+        const alumno = await Alumno.findById(id);
+        if (!alumno){
+            const error = new Error("Alumno no encontrado" );
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const materia = alumno.materias.find(
+        (m) =>
+            m._id.toString() === materiaid &&
+            m.curso === curso &&
+            m.profesor.nombre === profesorNombre
+        );
+
+        if (!materia)
+        {
+            const error = new Error("No autorizado o materia/curso incorrecto");
+            error.statusCode = 403;
+            throw error;
+        }
+
+        // Si se envía una nueva nota
+        if (nuevaNota) {
+            const existente = materia.notas.find((n) => n.tipo === nuevaNota.tipo);
+            if (existente) existente.nota = nuevaNota.nota;
+            else materia.notas.push(nuevaNota);
+        }
+
+        // Si se envía una nueva asistencia
+        if (nuevaAsistencia) {
+            materia.asistencias.push(nuevaAsistencia);
+        }
+
+        await alumno.save();
+        res.json({ msg: "Actualización exitosa", alumno });
+    } catch (err) {
+        next(err);
+    }
+};*/
 
 
 const deleteAlumno = async (req, res, next) => {
@@ -157,5 +230,6 @@ module.exports = {
     getAlumnoById,
     createAlumno,
     updateAlumno,
+    //updateNotasAsistencias,
     deleteAlumno
 };

@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 
 const alumnoSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
-  curso: { type: String, required: true },
-  materias: [
+    materias: [
     {
       nombre: { type: String, required: true },
+      curso: { type: String, required: true },//MODIFICADO
       profesor: {
         nombre: { type: String, required: true }
       },

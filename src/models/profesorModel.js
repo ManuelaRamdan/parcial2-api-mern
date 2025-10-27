@@ -5,7 +5,7 @@ const profesorSchema = new mongoose.Schema({
     materiasDictadas: [
         {
             nombre: { type: String, required: true },
-            cursos: [{ type: String, required: true }],
+            curso: { type: String, required: true },
             alumnos: [
                 {
                     nombre: { type: String, required: true },
