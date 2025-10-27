@@ -105,65 +105,28 @@ const createAlumno = async (req, res, next) => {
 
 const updateAlumno = async (req, res, next) => {
     try {
-        const { id, materiaid, curso } = req.params;
-        //const actualizarDatos = req.body;
+        const { id } = req.params;
         const datosBody = req.body;
 
-        let actualizarDatos;
-
-        if (materiaid && curso) {
-            // Profesor: solo puede actualizar notas/asistencias
-            actualizarDatos = {
-                materias: [
-                {
-                    _id: materiaid,
-                    curso,
-                    profesor: req.user.nombre, // pasamos nombre del profe para validar en el servicio
-                    notas: datosBody.nuevaNota ? [datosBody.nuevaNota] : undefined,
-                    asistencias: datosBody.nuevaAsistencia ? [datosBody.nuevaAsistencia] : undefined,
-                },
-                ],
-            };
-        } else {
-             // Admin: puede actualizar todo
-            if (datosBody.curso || datosBody.materias?.some(m => m.profesor)) {
-                const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, se debe hacer desde Materias");
-                error.statusCode = 422;
-                throw error;
-            }
-
-            const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni });
-            if (alumnoExistente) {
-                const error = new Error(`Ya existe un alumno registrado con el DNI ${actualizarDatos.dni}.`);
-                error.statusCode = 409; // 409 = Conflicto (recurso duplicado)
-                throw error;
-            }
-
-            actualizarDatos = datosBody;
-        }
-        
-        /*
-        // Validar que no se modifique curso ni profesor desde aca
-        if (actualizarDatos.curso || actualizarDatos.materias?.some(m => m.profesor)) {
-            const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, se debe hacer desde Materias");
+        // Validación básica: debe haber al menos un campo para actualizar
+        if (
+            !datosBody.dni &&
+            !datosBody.nombre &&
+            datosBody.activo === undefined &&
+            !Array.isArray(datosBody.materias)
+        ) {
+            const error = new Error("No hay datos para actualizar");
             error.statusCode = 422;
             throw error;
         }
 
-        if (Array.isArray(actualizarDatos.materias)) {
-            const faltaNombre = actualizarDatos.materias.some(m => !m.nombre);
-            if (faltaNombre) {
-                const error = new Error("Cada materia que se quiera modificar debe tener el campo 'nombre'");
-                error.statusCode = 422;
-                throw error;
-            }
-        }
-        */
-        
+        // Llamada al servicio
+        const alumnoActualizado = await actualizarAlumno(id, datosBody, next);
 
-        const alumnoActualizado = await actualizarAlumno(id, actualizarDatos, next);
-
-        res.json({ message: "Alumno actualizado correctamente", alumno: alumnoActualizado });
+        res.json({
+            message: "Alumno actualizado correctamente",
+            alumno: alumnoActualizado,
+        });
     } catch (err) {
         next(err);
     }
