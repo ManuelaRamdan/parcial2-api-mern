@@ -2,15 +2,19 @@ const Alumno = require("../models/alumnoModel");
 const Profesor = require("../models/profesorModel");
 const Materia = require("../models/materiaModel");
 const Usuario = require("../models/usuarioModel");
-
+const _ = require("lodash");
 
 const actualizarAlumno = async (id, actualizarDatos, next) => {
-    try {
+    try {    
         const alumno = await Alumno.findById(id);
         if (!alumno) {
             const error = new Error("Alumno no encontrado");
             error.statusCode = 404;
             throw error;
+        }
+
+        if (actualizarDatos.hasOwnProperty('activo')) {
+            alumno.activo = actualizarDatos.activo;
         }
 
         const dniViejo = alumno.dni;
@@ -67,7 +71,7 @@ const actualizarAlumno = async (id, actualizarDatos, next) => {
 
         // Sincronizar cambios solo si es admin
         // Sincronizar cambios de nombre/dni en usuarios, materias y profesores
-        if (!esProfesor) await sincronizarAlumnoConColecciones(alumno, dniViejo, next);
+         if (!esProfesor) await sincronizarAlumnoConColecciones(alumno, dniViejo, next);
 
         return alumno;
     } catch (err) {

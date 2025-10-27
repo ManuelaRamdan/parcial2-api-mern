@@ -10,6 +10,7 @@ const profesorSchema = new mongoose.Schema({
                 {
                     nombre: { type: String, required: true },
                     dni: { type: String, required: true },
+                    activo: { type: Boolean, default: true },
                     notas: [
                         {
                             tipo: { type: String, required: true },
