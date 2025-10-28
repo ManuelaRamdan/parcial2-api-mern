@@ -43,58 +43,67 @@ const getAlumnoById = async (req, res, next) => {
 
 
 const createAlumno = async (req, res, next) => {
-    //que se ponga el alumno a las materias y profesores con esas meterias
     try {
-        const { nombre, dni, curso } = req.body;
-
-        if (!nombre || !dni || !curso) {
-            const error = new Error("Faltan datos obligatorios: nombre, dni o curso.");
+        const { nombre, dni, materias } = req.body;
+        console.log(req.body);
+        if (!nombre || !dni || !Array.isArray(materias) || materias.length === 0) {
+            const error = new Error("Faltan datos obligatorios: nombre, dni o materias.");
             error.statusCode = 400;
             throw error;
         }
 
+        // Verificar duplicado de DNI
         const alumnoExistente = await Alumno.findOne({ dni });
         if (alumnoExistente) {
             const error = new Error(`Ya existe un alumno registrado con el DNI ${dni}.`);
-            error.statusCode = 409; // 409 = Conflicto (recurso duplicado)
+            error.statusCode = 409;
             throw error;
         }
 
-        // Buscar las materias del curso
-        const materiasCurso = await Materia.find({ curso });
+        // Validar que todas las materias existan en la BD
+        const nombresMaterias = materias.map(m => m.nombre);
+        const cursosMaterias = materias.map(m => m.curso);
 
-        if (!materiasCurso.length) {
-            const error = new Error(`No se encontraron materias para el curso ${curso}.`);
+        const materiasEnBD = await Materia.find({
+            nombre: { $in: nombresMaterias },
+            curso: { $in: cursosMaterias }
+        });
+
+        if (materiasEnBD.length !== materias.length) {
+            const faltantes = materias.filter(m =>
+                !materiasEnBD.some(db => db.nombre === m.nombre && db.curso === m.curso)
+            );
+            const nombresFaltantes = faltantes.map(f => `${f.nombre} (${f.curso})`).join(", ");
+            const error = new Error(`Las siguientes materias no existen: ${nombresFaltantes}`);
             error.statusCode = 404;
             throw error;
         }
 
-        // Crear la estructura de materias para el alumno
-        const materiasAlumno = materiasCurso.map(materia => ({
-            nombre: materia.nombre,
-            profesor: {
-                nombre: materia.profesor?.nombre || "Sin asignar"
-            },
+        // Crear la estructura interna del alumno
+        const materiasAlumno = materias.map(m => ({
+            nombre: m.nombre,
+            curso: m.curso, 
+            profesor: { nombre: m.profesor?.nombre || "Sin asignar" },
             notas: [],
             asistencias: []
         }));
 
-        // Crear y guardar el alumno
+        // Crear el documento del alumno
         const nuevoAlumno = new Alumno({
             nombre,
             dni,
-            curso,
-            materias: materiasAlumno
+            materias: materiasAlumno,
+            activo: true
         });
 
         await nuevoAlumno.save();
 
+        // Sincronizar en colecciones Materia y Profesor
         await agregarAlumnoEnMaterias(nuevoAlumno);
         await agregarAlumnoEnProfesores(nuevoAlumno);
 
-        // 201 -> Petición exitosa. Se ha creado un nuevo recurso
         res.status(201).json({
-            message: "Alumno creado correctamente",
+            message: "Alumno creado correctamente y sincronizado",
             alumno: nuevoAlumno
         });
     } catch (err) {
@@ -132,51 +141,7 @@ const updateAlumno = async (req, res, next) => {
     }
 };
 
-/*const updateNotasAsistencias = async (req, res, next) => {
-    try {
-        const { id, materiaid, curso } = req.params;
-        const { nuevaNota, nuevaAsistencia } = req.body;
-        const profesorNombre = req.user.nombre;
 
-        const alumno = await Alumno.findById(id);
-        if (!alumno){
-            const error = new Error("Alumno no encontrado" );
-            error.statusCode = 404;
-            throw error;
-        }
-
-        const materia = alumno.materias.find(
-        (m) =>
-            m._id.toString() === materiaid &&
-            m.curso === curso &&
-            m.profesor.nombre === profesorNombre
-        );
-
-        if (!materia)
-        {
-            const error = new Error("No autorizado o materia/curso incorrecto");
-            error.statusCode = 403;
-            throw error;
-        }
-
-        // Si se envía una nueva nota
-        if (nuevaNota) {
-            const existente = materia.notas.find((n) => n.tipo === nuevaNota.tipo);
-            if (existente) existente.nota = nuevaNota.nota;
-            else materia.notas.push(nuevaNota);
-        }
-
-        // Si se envía una nueva asistencia
-        if (nuevaAsistencia) {
-            materia.asistencias.push(nuevaAsistencia);
-        }
-
-        await alumno.save();
-        res.json({ msg: "Actualización exitosa", alumno });
-    } catch (err) {
-        next(err);
-    }
-};*/
 
 
 const deleteAlumno = async (req, res, next) => {

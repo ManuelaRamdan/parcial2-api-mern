@@ -274,8 +274,83 @@ const procesarProfesor = async (prof, alumno, dniViejo, next) => {
     }
 };
 
+const agregarAlumnoEnMaterias = async (alumno) => {
+    if (!alumno || !Array.isArray(alumno.materias)) return;
+
+    await Promise.all(
+        alumno.materias.map(async (materiaAlumno) => {
+            const result = await Materia.updateOne(
+                { nombre: materiaAlumno.nombre, curso: materiaAlumno.curso }, // ✅ usar el curso de la materia
+                {
+                    $addToSet: {
+                        alumnos: {
+                            nombre: alumno.nombre,
+                            dni: alumno.dni,
+                            activo: alumno.activo ?? true,
+                        }
+                    }
+                }
+            );
+
+            // Log útil para depuración
+            if (result.modifiedCount === 0) {
+                console.warn(
+                    `⚠️ No se actualizó la materia ${materiaAlumno.nombre} (${materiaAlumno.curso}) — no encontrada o ya contenía al alumno`
+                );
+            }
+        })
+    );
+};
+
+const agregarAlumnoEnProfesores = async (alumno) => {
+    if (!alumno || !Array.isArray(alumno.materias)) return;
+
+    const materiasAlumno = alumno.materias.map(m => m.nombre);
+
+    const profesores = await Profesor.find({
+        "materiasDictadas.nombre": { $in: materiasAlumno },
+    });
+
+    await Promise.all(
+        profesores.map(async (prof) => {
+            let huboCambios = false;
+
+            const nuevasMaterias = prof.materiasDictadas.map(materiaDictada => {
+                const coincide = alumno.materias.some(
+                    m => m.nombre === materiaDictada.nombre && m.curso === materiaDictada.curso
+                );
+
+                if (!coincide) return materiaDictada;
+
+                const yaExiste = materiaDictada.alumnos.some(a => a.dni === alumno.dni);
+                if (yaExiste) return materiaDictada;
+
+                huboCambios = true;
+
+                return {
+                    ...materiaDictada,
+                    alumnos: [
+                        ...materiaDictada.alumnos,
+                        {
+                            nombre: alumno.nombre,
+                            dni: alumno.dni,
+                            activo: alumno.activo ?? true,
+                            notas: [],
+                            asistencias: []
+                        }
+                    ]
+                };
+            });
+
+            if (huboCambios) {
+                prof.materiasDictadas = nuevasMaterias;
+                prof.markModified("materiasDictadas");
+                await prof.save();
+            }
+        })
+    );
+};
 
 
-
-module.exports = { actualizarAlumno };
+module.exports = { actualizarAlumno, agregarAlumnoEnMaterias, agregarAlumnoEnProfesores };
 
