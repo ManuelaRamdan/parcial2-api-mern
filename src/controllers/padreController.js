@@ -4,8 +4,8 @@ const Alumno = require("../models/alumnoModel");
 const getAllHijos = async (req, res, next) => {
   try {
     // Obtener el padre desde el JWT
-    const idPadre = req.user.id || req.params.id;
-    const padre = await Usuario.findOne({ _id: idPadre});
+    const idPadre = req.user.id;
+    const padre = await Usuario.findById(idPadre);
 
     if (!padre) {
       const error = new Error("Padre no encontrado");
@@ -13,13 +13,20 @@ const getAllHijos = async (req, res, next) => {
       return next(error);
     }
 
-    // Buscar los alumnos cuyos DNI estén en el array padre.hijos
-    const hijos = await Alumno.find({ dni: { $in: padre.hijos } });
+    // Filtrar solo los hijos activos
+    const hijosActivos = padre.hijos.filter(h => h.activo);
+
+    // Extraer los DNIs activos
+    const dnisHijos = hijosActivos.map(h => h.dni);
+
+    // Buscar los alumnos correspondientes
+    const alumnos = await Alumno.find({ dni: { $in: dnisHijos }, activo: true });
 
     // Mapear solo la info que queremos mostrar
-    const hijosInfo = hijos.map(h => ({
-      id: h._id,
-      nombre: h.nombre
+    const hijosInfo = alumnos.map(a => ({
+      id: a._id,
+      nombre: a.nombre,
+      dni: a.dni
     }));
 
     res.json({
@@ -31,11 +38,11 @@ const getAllHijos = async (req, res, next) => {
   }
 };
 
+
 const getAllHijosByID = async (req, res, next) => {
   try {
-    // Obtener el padre desde el JWT
-    const idPadre =  req.params.id;
-    const padre = await Usuario.findOne({ _id: idPadre});
+    // Buscar el padre por ID recibido por parámetro
+    const padre = await Usuario.findById(req.params.id);
 
     if (!padre) {
       const error = new Error("Padre no encontrado");
@@ -43,13 +50,20 @@ const getAllHijosByID = async (req, res, next) => {
       return next(error);
     }
 
-    // Buscar los alumnos cuyos DNI estén en el array padre.hijos
-    const hijos = await Alumno.find({ dni: { $in: padre.hijos } });
+    // Filtrar solo los hijos activos
+    const hijosActivos = padre.hijos.filter(h => h.activo);
 
-    // Mapear solo la info que queremos mostrar
-    const hijosInfo = hijos.map(h => ({
-      id: h._id,
-      nombre: h.nombre
+    // Extraer los DNIs activos
+    const dnisHijos = hijosActivos.map(h => h.dni);
+
+    // Buscar los alumnos correspondientes
+    const alumnos = await Alumno.find({ dni: { $in: dnisHijos }, activo: true });
+
+    // Mapear la información relevante
+    const hijosInfo = alumnos.map(a => ({
+      id: a._id,
+      nombre: a.nombre,
+      dni: a.dni
     }));
 
     res.json({

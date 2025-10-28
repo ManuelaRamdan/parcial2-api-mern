@@ -138,9 +138,8 @@ const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas =
 };
 
 const sincronizarAlumnoConColecciones = async (alumno, dniViejo, next) => {
-    const { dni } = alumno;
 
-    await actualizarDniEnUsuarios(dniViejo, dni);
+    await actualizarDniEnUsuarios(dniViejo, alumno);
     await actualizarProfesores(alumno, dniViejo, next);
     await actualizarAlumnoEnMaterias(dniViejo, alumno);
 
@@ -165,12 +164,18 @@ const actualizarAlumnoEnMaterias = async (dniViejo, alumno) => {
 
 
 
-const actualizarDniEnUsuarios = async (dniViejo, dniNuevo) => {
+const actualizarDniEnUsuarios = async (dniViejo, alumno) => {
     await Usuario.updateMany(
-        { hijos: dniViejo },
-        { $set: { "hijos.$": dniNuevo } }
+        { "hijos.dni": dniViejo },
+        {
+            $set: {
+                "hijos.$.dni": alumno.dni,
+                "hijos.$.activo": alumno.activo
+            }
+        }
     );
 };
+
 
 // Actualizar datos en profesores
 const actualizarProfesores = async (alumno, dniViejo, next) => {
@@ -280,7 +285,7 @@ const agregarAlumnoEnMaterias = async (alumno) => {
     await Promise.all(
         alumno.materias.map(async (materiaAlumno) => {
             const result = await Materia.updateOne(
-                { nombre: materiaAlumno.nombre, curso: materiaAlumno.curso }, 
+                { nombre: materiaAlumno.nombre, curso: materiaAlumno.curso },
                 {
                     $addToSet: {
                         alumnos: {

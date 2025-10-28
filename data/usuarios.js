@@ -5,14 +5,14 @@
     "email": "padre1@example.com",
     "password": "hashed",
     "rol": "padre",
-    "hijos": [ { "$oid": "68cdd7717a9194521b3d5722" }, { "$oid": "68cdd7717a9194521b3d5724" } ]
+    "hijos": [{ "$oid": "68cdd7717a9194521b3d5722" }, { "$oid": "68cdd7717a9194521b3d5724" }]
   },
   {
     "nombre": "Padre 2",
     "email": "padre2@example.com",
     "password": "hashed",
     "rol": "padre",
-    "hijos": [ { "$oid": "68cdd7717a9194521b3d5723" }]
+    "hijos": [{ "$oid": "68cdd7717a9194521b3d5723" }]
   },
   {
     "_id": "68cdd3317a9194521b3d5715",
@@ -41,6 +41,7 @@
     "email": "admin@example.com",
     "password": "hashed",
     "rol": "administrador"
-  }
+  },
+ 
 ]
 
