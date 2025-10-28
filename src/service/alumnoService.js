@@ -280,7 +280,7 @@ const agregarAlumnoEnMaterias = async (alumno) => {
     await Promise.all(
         alumno.materias.map(async (materiaAlumno) => {
             const result = await Materia.updateOne(
-                { nombre: materiaAlumno.nombre, curso: materiaAlumno.curso }, // ✅ usar el curso de la materia
+                { nombre: materiaAlumno.nombre, curso: materiaAlumno.curso }, 
                 {
                     $addToSet: {
                         alumnos: {
@@ -291,13 +291,6 @@ const agregarAlumnoEnMaterias = async (alumno) => {
                     }
                 }
             );
-
-            // Log útil para depuración
-            if (result.modifiedCount === 0) {
-                console.warn(
-                    `⚠️ No se actualizó la materia ${materiaAlumno.nombre} (${materiaAlumno.curso}) — no encontrada o ya contenía al alumno`
-                );
-            }
         })
     );
 };

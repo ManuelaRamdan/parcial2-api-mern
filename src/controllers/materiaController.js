@@ -3,29 +3,29 @@ const Materia = require("../models/materiaModel");
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
 
-
 const paginate = require("../utils/paginar");
 
 const getAllMaterias = async (req, res, next) => {
     try {
-
-        const curso = req.query.curso; // ejemplo: /api/materias?curso=2A
-
-        const query = curso ? { curso } : {}; // si no viene, muestra todas
-
         const result = await paginate(Materia, req, {
-            query,
             sort: { nombre: 1 },
         });
 
+        // Filtrar solo alumnos activos dentro de cada materia
+        const materiasFiltradas = result.data.map(materia => ({
+            ...materia.toObject(),
+            alumnos: materia.alumnos.filter(alumno => alumno.activo === true),
+        }));
+
         res.json({
-            materias: result.data,
+            materias: materiasFiltradas,
             pagination: result.pagination
         });
     } catch (err) {
         next(err);
     }
 };
+
 
 // Obtener por ID
 
@@ -37,7 +37,12 @@ const getMateriaById = async (req, res, next) => {
             error.statusCode = 404;
             throw error;
         } else {
-            res.json(materia);
+            const materiaFiltrada = {
+                ...materia.toObject(),
+                alumnos: materia.alumnos.filter(alumno => alumno.activo === true)
+            };
+
+            res.json(materiaFiltrada);
         }
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
@@ -55,7 +60,12 @@ const getMateriaByProfe = async (req, res, next) => {
             error.statusCode = 404;
             throw error;
         } else {
-            res.json(materias);
+            const materiaFiltrada = {
+                ...materia.toObject(),
+                alumnos: materia.alumnos.filter(alumno => alumno.activo === true)
+            };
+
+            res.json(materiaFiltrada);
         }
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
@@ -73,7 +83,12 @@ const getMateriaByIdProfe = async (req, res, next) => {
             error.statusCode = 404;
             throw error;
         } else {
-            res.json(materias);
+            const materiaFiltrada = {
+                ...materia.toObject(),
+                alumnos: materia.alumnos.filter(alumno => alumno.activo === true)
+            };
+
+            res.json(materiaFiltrada);
         }
     } catch (err) {
         //500 -> El servidor ha encontrado una situación que no sabe cómo manejar

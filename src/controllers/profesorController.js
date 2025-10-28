@@ -6,14 +6,29 @@ const paginate = require("../utils/paginar");
 const getAllProfesores = async (req, res, next) => {
   try {
     const result = await paginate(Profesor, req);
+
+    // Filtrar alumnos activos en cada materia de cada profesor
+    const profesoresFiltrados = result.data.map(prof => {
+      const materiasFiltradas = prof.materiasDictadas.map(materia => ({
+        ...materia.toObject ? materia.toObject() : materia,
+        alumnos: materia.alumnos.filter(alumno => alumno.activo === true)
+      }));
+
+      return {
+        ...prof.toObject(),
+        materiasDictadas: materiasFiltradas
+      };
+    });
+
     res.json({
-      profesores: result.data,
+      profesores: profesoresFiltrados,
       pagination: result.pagination
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 
 
@@ -29,7 +44,17 @@ const getProfesorById = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     } else {
-      res.json(profesor);
+      const materiasFiltradas = profesor.materiasDictadas.map(materia => ({
+        ...materia.toObject ? materia.toObject() : materia,
+        alumnos: materia.alumnos.filter(alumno => alumno.activo === true)
+      }));
+
+      const profesorFiltrado = {
+        ...profesor.toObject(),
+        materiasDictadas: materiasFiltradas
+      };
+
+      res.json(profesorFiltrado);
     }
 
   } catch (err) {

@@ -8,7 +8,11 @@ const paginate = require("../utils/paginar");
 
 const getAllAlumnos = async (req, res, next) => {
     try {
-        const result = await paginate(Alumno, req, { sort: { nombre: 1 } });
+        const result = await paginate(Alumno, req, {
+            filter: { activo: true }, 
+            sort: { nombre: 1 }
+        });
+
         res.json({
             alumnos: result.data,
             pagination: result.pagination
@@ -17,6 +21,7 @@ const getAllAlumnos = async (req, res, next) => {
         next(err);
     }
 };
+
 
 
 
@@ -37,7 +42,6 @@ const getAlumnoById = async (req, res, next) => {
 
     } catch (err) {
         next(err);
-
     }
 };
 
