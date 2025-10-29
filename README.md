@@ -33,9 +33,9 @@ npm install
 ```
 ### 3. Variables de entorno
 ```text
-DB_URL=mongodb+srv://manuelaRamdan_user:9iPpm7WkPjrHcEhJ@cluster0.loupu0f.mongodb.net/academa?retryWrites=true&w=majority&appName=Cluster0
+DB_URL=mongodb+srv://<usuario>:<contraseña>@<cluster>.mongodb.net/<nombre_base>
 PORT=3000
-JWT_SECRET=root
+JWT_SECRET=<clave_secreta>
 ```
 ### 4. Modos de ejecución
 
