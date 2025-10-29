@@ -6,7 +6,7 @@ const _ = require("lodash");
 
 const actualizarAlumno = async (id, actualizarDatos, next) => {
     try {
-        const alumno = await Alumno.findById(id);
+        const alumno = await Alumno.findOne({ _id: req.params.id, activo: true });
         if (!alumno) {
             const error = new Error("Alumno no encontrado");
             error.statusCode = 404;
@@ -15,9 +15,9 @@ const actualizarAlumno = async (id, actualizarDatos, next) => {
 
         const dniViejo = alumno.dni;
 
-        //algo que verifique datos basicos?
         if (actualizarDatos.dni !== undefined) {
-            if (typeof actualizarDatos.dni !== "string" || Number(actualizarDatos.dni) <= 0) {
+            //parseInt(nroHijosCad)
+            if ( Number(actualizarDatos.dni) <= 0) {
                 const error = new Error("El DNI debe ser un string numérico mayor que 0");
                 error.statusCode = 422;
                 throw error;
@@ -31,18 +31,10 @@ const actualizarAlumno = async (id, actualizarDatos, next) => {
             alumno.dni = actualizarDatos.dni;
         }
 
-        if (actualizarDatos.nombre !== undefined && typeof actualizarDatos.nombre !== "string") {
-            const error = new Error("El nombre debe ser un string");
-            error.statusCode = 422;
-            throw error;
-        }
+
         if (actualizarDatos.nombre !== undefined) alumno.nombre = actualizarDatos.nombre;
 
-        if (actualizarDatos.activo !== undefined && typeof actualizarDatos.activo !== "boolean") {
-            const error = new Error("El campo activo debe ser booleano");
-            error.statusCode = 422;
-            throw error;
-        }
+
         if (actualizarDatos.activo !== undefined) alumno.activo = actualizarDatos.activo;
 
         if (Array.isArray(actualizarDatos.materias)) {
@@ -79,12 +71,6 @@ const actualizarNotas = (notasAlumno = [], notasActualizadas = []) => {
     if (!Array.isArray(notasActualizadas)) return notasAlumno;
 
     return notasActualizadas.reduce((acc, notaUpdate) => {
-        // Validación de tipos
-        if (typeof notaUpdate.tipo !== "string" || typeof notaUpdate.nota !== "number") {
-            const error = new Error("Formato inválido en nota");
-            error.statusCode = 422;
-            throw error;
-        }
 
         // Buscar si ya existe la nota
         const index = acc.findIndex((n) => n.tipo === notaUpdate.tipo);

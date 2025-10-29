@@ -9,9 +9,22 @@ const paginate = require("../utils/paginar");
 
 const getAllUsuarios = async (req, res, next) => {
     try {
-        const result = await paginate(Usuario, req);
+        const result = await paginate(Usuario, req, {
+            // excluimos el campo password de todos los usuarios
+            select: "-password"
+        });
+
+        // Filtramos los hijos inactivos si el rol es padre
+        const usuariosProcesados = result.data.map(u => {
+            const usuario = u.toObject();
+            if (usuario.rol === "padre" && Array.isArray(usuario.hijos)) {
+                usuario.hijos = usuario.hijos.filter(h => h.activo);
+            }
+            return usuario;
+        });
+
         res.json({
-            usuarios: result.data,
+            usuarios: usuariosProcesados,
             pagination: result.pagination
         });
     } catch (err) {
@@ -21,24 +34,28 @@ const getAllUsuarios = async (req, res, next) => {
 
 
 // Obtener por ID
-
 const getUsuarioById = async (req, res, next) => {
     try {
-        const usuario = await Usuario.findById(req.params.id);
+        const usuario = await Usuario.findById(req.params.id).select("-password");
+
         if (!usuario) {
-            //404 -> El servidor no pudo encontrar el contenido solicitado
             const error = new Error("Usuario no encontrado");
             error.statusCode = 404;
             throw error;
-        } else {
-            res.json(usuario);
         }
 
+        // Filtrar hijos activos solo si es padre
+        let usuarioObj = usuario.toObject();
+        if (usuarioObj.rol === "padre" && Array.isArray(usuarioObj.hijos)) {
+            usuarioObj.hijos = usuarioObj.hijos.filter(h => h.activo);
+        }
+
+        res.json(usuarioObj);
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
+
 
 // Crear nuevo hacer esto de nuevo con bycript
 const createUsuario = async (req, res, next) => {
@@ -56,6 +73,21 @@ const createUsuario = async (req, res, next) => {
         // Hashear la contraseña
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
+
+        let hijosFormateados = [];
+        if (rol === "padre" && Array.isArray(hijos)) {
+            hijosFormateados = hijos.map(h => {
+                if (typeof h === "string") {
+                    return { dni: h, activo: true };
+                }
+
+                // Si ya viene como objeto, validamos campos
+                return {
+                    dni: h.dni,
+                    activo: h.activo !== undefined ? h.activo : true
+                };
+            });
+        }
 
         // Crear nuevo usuario
         const nuevoUsuario = new Usuario({

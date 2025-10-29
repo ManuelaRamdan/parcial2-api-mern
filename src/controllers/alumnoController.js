@@ -30,16 +30,16 @@ const getAllAlumnos = async (req, res, next) => {
 
 const getAlumnoById = async (req, res, next) => {
     try {
-        const alumno = await Alumno.findById(req.params.id);
+        // Buscamos por ID y además verificamos que esté activo
+        const alumno = await Alumno.findOne({ _id: req.params.id, activo: true });
+
         if (!alumno) {
-            const error = new Error("Alumno no encontrado");
+            const error = new Error("Alumno no encontrado o inactivo");
             error.statusCode = 404;
             throw error;
         }
 
         res.json(alumno);
-
-
     } catch (err) {
         next(err);
     }
