@@ -134,7 +134,7 @@ const updateAlumno = async (req, res, next) => {
         }
 
         // Llamada al servicio
-        const alumnoActualizado = await actualizarAlumno(id, datosBody, next);
+        const alumnoActualizado = await actualizarAlumno(id, datosBody);
 
         res.json({
             message: "Alumno actualizado correctamente",
@@ -150,16 +150,13 @@ const updateAlumno = async (req, res, next) => {
 
 const deleteAlumno = async (req, res, next) => {
     try {
-        // Llamamos a actualizarAlumno, pasándole el campo activo: false
         const alumnoActualizado = await actualizarAlumno(
             req.params.id,
-            { activo: false },
-            next
+            { activo: false }
         );
 
         res.json({
-            msg: `Alumno con id ${req.params.id} marcado como inactivo correctamente`,
-            alumno: alumnoActualizado
+            msg: `Alumno con id ${req.params.id} marcado como inactivo correctamente`
         });
     } catch (err) {
         next(err);
@@ -171,6 +168,5 @@ module.exports = {
     getAlumnoById,
     createAlumno,
     updateAlumno,
-    //updateNotasAsistencias,
     deleteAlumno
 };

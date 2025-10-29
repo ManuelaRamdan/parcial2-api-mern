@@ -4,9 +4,9 @@ const Materia = require("../models/materiaModel");
 const Usuario = require("../models/usuarioModel");
 const _ = require("lodash");
 
-const actualizarAlumno = async (id, actualizarDatos, next) => {
-    try {
-        const alumno = await Alumno.findOne({ _id: req.params.id, activo: true });
+const actualizarAlumno = async (id, actualizarDatos) => {
+
+        const alumno = await Alumno.findOne({ _id: id, activo: true });
         if (!alumno) {
             const error = new Error("Alumno no encontrado");
             error.statusCode = 404;
@@ -17,8 +17,8 @@ const actualizarAlumno = async (id, actualizarDatos, next) => {
 
         if (actualizarDatos.dni !== undefined) {
             //parseInt(nroHijosCad)
-            if ( Number(actualizarDatos.dni) <= 0) {
-                const error = new Error("El DNI debe ser un string numérico mayor que 0");
+            if (Number(actualizarDatos.dni) <= 0) {
+                const error = new Error("El DNI debe ser mayor que 0");
                 error.statusCode = 422;
                 throw error;
             }
@@ -38,32 +38,51 @@ const actualizarAlumno = async (id, actualizarDatos, next) => {
         if (actualizarDatos.activo !== undefined) alumno.activo = actualizarDatos.activo;
 
         if (Array.isArray(actualizarDatos.materias)) {
-            alumno.materias = alumno.materias.map((materia) => {
-                // Encontrar la materia que se quiere actualizar
-                const esAdmin = actualizarDatos.dni !== undefined || actualizarDatos.nombre !== undefined || actualizarDatos.activo !== undefined;
+            // Buscar todas las materias que vienen en la actualización
+            const materiasDB = await Materia.find({
+                $or: actualizarDatos.materias.map(m => ({ nombre: m.nombre, curso: m.curso }))
+            });
 
+            // Validaciones usando programación funcional
+            const materiaInvalida = actualizarDatos.materias.find(
+                m => !materiasDB.some(dbM => dbM.nombre === m.nombre && dbM.curso === m.curso)
+            );
+            if (materiaInvalida) {
+                const error = new Error(`La materia ${materiaInvalida.nombre} curso ${materiaInvalida.curso} no existe`);
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const noInscripto = actualizarDatos.materias.find(
+                m => !alumno.materias.some(am => am.nombre === m.nombre && am.curso === m.curso)
+            );
+            if (noInscripto) {
+                const error = new Error(`El alumno no está inscripto en la materia ${noInscripto.nombre} curso ${noInscripto.curso}`);
+                error.statusCode = 422;
+                throw error;
+            }
+
+            // Actualización funcional de materias
+            alumno.materias = alumno.materias.map(materia => {
                 const materiaUpdate = actualizarDatos.materias.find(
-                    (m) => m.nombre === materia.nombre && m.curso === materia.curso
+                    m => m.nombre === materia.nombre && m.curso === materia.curso
                 );
-
                 if (!materiaUpdate) return materia;
 
-                // Actualizar notas y asistencias según corresponda
                 return {
                     ...materia,
                     notas: actualizarNotas(materia.notas, materiaUpdate.notas),
-                    asistencias: actualizarAsistencias(materia.asistencias, materiaUpdate.asistencias, next),
+                    asistencias: actualizarAsistencias(materia.asistencias, materiaUpdate.asistencias),
                 };
             });
         }
 
+
         await alumno.save();
 
-        await sincronizarAlumnoConColecciones(alumno, dniViejo, next);
+        await sincronizarAlumnoConColecciones(alumno, dniViejo);
         return alumno;
-    } catch (err) {
-        next(err);
-    }
+
 };
 
 
@@ -123,10 +142,10 @@ const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas =
     return asistenciasAlumno;
 };
 
-const sincronizarAlumnoConColecciones = async (alumno, dniViejo, next) => {
+const sincronizarAlumnoConColecciones = async (alumno, dniViejo) => {
 
     await actualizarDniEnUsuarios(dniViejo, alumno);
-    await actualizarProfesores(alumno, dniViejo, next);
+    await actualizarProfesores(alumno, dniViejo);
     await actualizarAlumnoEnMaterias(dniViejo, alumno);
 
 };
@@ -142,7 +161,7 @@ const actualizarAlumnoEnMaterias = async (dniViejo, alumno) => {
             },
         },
         {
-            arrayFilters: [{ "a.dni": dniViejo }],
+            arrayFilters: [{ "a.dni": dniViejo }]
         }
     );
 };
@@ -164,16 +183,15 @@ const actualizarDniEnUsuarios = async (dniViejo, alumno) => {
 
 
 // Actualizar datos en profesores
-const actualizarProfesores = async (alumno, dniViejo, next) => {
+const actualizarProfesores = async (alumno, dniViejo) => {
     const { nombre, dni, materias, activo } = alumno;
 
-    try {
         //obtener todos los documentos Profesor cuyo array materiasDictadas contenga un subdocumento alumnos con dni === dniViejo
         const profesores = await Profesor.find({ "materiasDictadas.alumnos.dni": dniViejo });
         //usa Promise.all para actualizar múltiples profesores en paralelo.
         // promise para ejecutar varias operaciones asincronicas una por profesor y esperar a que todas terminen para seguir
         await Promise.all(
-            profesores.map(prof => procesarProfesor(prof, alumno, dniViejo, next))
+            profesores.map(prof => procesarProfesor(prof, alumno, dniViejo))
         );
 
         // profesores es un array de todos los profesores donde aparece ese alumno.
@@ -185,12 +203,9 @@ const actualizarProfesores = async (alumno, dniViejo, next) => {
 
         // sin promise.all, llega el primer prof.save y termina sin pasar por el siguiente promesa, pero con promise.all todos los prof.save se hacen el paralelo no secuencial 
 
-    } catch (err) {
-        next(err); // pasa cualquier error al middleware
-    }
 };
 
-const procesarProfesor = async (prof, alumno, dniViejo, next) => {
+const procesarProfesor = async (prof, alumno, dniViejo) => {
     const { nombre, dni, materias, activo } = alumno;
     let huboCambios = false;
 
@@ -217,7 +232,7 @@ const procesarProfesor = async (prof, alumno, dniViejo, next) => {
                 if (alumnoSub.dni === dniViejo) {
 
                     const nuevasNotas = actualizarNotas(alumnoSub.notas, materiaAlumno.notas);
-                    const nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias, next);
+                    const nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias);
 
                     //_.isEqual es una función de Lodash -> libreria de js
                     //comparar dos valores en profundidad y devuelve true si son iguales, por eso tiene !
