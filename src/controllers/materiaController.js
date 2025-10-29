@@ -5,17 +5,16 @@ const ObjectId = mongoose.Types.ObjectId;
 
 const paginate = require("../utils/paginar");
 
+const filtrarAlumnosActivos = (materia) => ({
+    ...materia.toObject(),
+    alumnos: materia.alumnos.filter(a => a.activo)
+});
+
 const getAllMaterias = async (req, res, next) => {
     try {
-        const result = await paginate(Materia, req, {
-            sort: { nombre: 1 },
-        });
+        const result = await paginate(Materia, req, { sort: { nombre: 1 } });
 
-        // Filtrar solo alumnos activos dentro de cada materia
-        const materiasFiltradas = result.data.map(materia => ({
-            ...materia.toObject(),
-            alumnos: materia.alumnos.filter(alumno => alumno.activo === true),
-        }));
+        const materiasFiltradas = result.data.map(filtrarAlumnosActivos);
 
         res.json({
             materias: materiasFiltradas,
@@ -26,9 +25,6 @@ const getAllMaterias = async (req, res, next) => {
     }
 };
 
-
-// Obtener por ID
-
 const getMateriaById = async (req, res, next) => {
     try {
         const materia = await Materia.findById(req.params.id);
@@ -36,62 +32,41 @@ const getMateriaById = async (req, res, next) => {
             const error = new Error("Materia no encontrada");
             error.statusCode = 404;
             throw error;
-        } else {
-            const materiaFiltrada = {
-                ...materia.toObject(),
-                alumnos: materia.alumnos.filter(alumno => alumno.activo === true)
-            };
-
-            res.json(materiaFiltrada);
         }
+        res.json(filtrarAlumnosActivos(materia));
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
 
+const obtenerMateriasPorProfesor = async (profesorId) => {
+    return Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
+};
+
 const getMateriaByProfe = async (req, res, next) => {
     try {
-        const profesorId = req.user.profesorId;
-        console.log(profesorId);
-        const materias = await Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
-        if (!materias || materias.length === 0) {
+        const materias = await obtenerMateriasPorProfesor(req.user.profesorId);
+        if (materias.length === 0) {
             const error = new Error("No se encontraron materias para este profesor");
             error.statusCode = 404;
             throw error;
-        } else {
-            const materiaFiltrada = {
-                ...materia.toObject(),
-                alumnos: materia.alumnos.filter(alumno => alumno.activo === true)
-            };
-
-            res.json(materiaFiltrada);
         }
+        res.json(materias.map(filtrarAlumnosActivos));
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
 
 const getMateriaByIdProfe = async (req, res, next) => {
     try {
-        const profesorId = req.params.id;
-        console.log(profesorId);
-        const materias = await Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
-        if (!materias || materias.length === 0) {
+        const materias = await obtenerMateriasPorProfesor(req.params.id);
+        if (materias.length === 0) {
             const error = new Error("No se encontraron materias para este profesor");
             error.statusCode = 404;
             throw error;
-        } else {
-            const materiaFiltrada = {
-                ...materia.toObject(),
-                alumnos: materia.alumnos.filter(alumno => alumno.activo === true)
-            };
-
-            res.json(materiaFiltrada);
         }
+        res.json(materias.map(filtrarAlumnosActivos));
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
