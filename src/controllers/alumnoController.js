@@ -1,4 +1,4 @@
-// src/controllers/usuarioController.js
+
 const Alumno = require("../models/alumnoModel");
 const { actualizarAlumno, agregarAlumnoEnMaterias, agregarAlumnoEnProfesores } = require("../service/alumnoService");
 const Materia = require("../models/materiaModel");
@@ -9,7 +9,7 @@ const paginate = require("../utils/paginar");
 const getAllAlumnos = async (req, res, next) => {
     try {
         const result = await paginate(Alumno, req, {
-            filter: { activo: true }, 
+            filter: { activo: true },
             sort: { nombre: 1 }
         });
 
@@ -23,14 +23,8 @@ const getAllAlumnos = async (req, res, next) => {
 };
 
 
-
-
-
-//404 -> El servidor no pudo encontrar el contenido solicitado
-
 const getAlumnoById = async (req, res, next) => {
     try {
-        // Buscamos por ID y además verificamos que esté activo
         const alumno = await Alumno.findOne({ _id: req.params.id, activo: true });
 
         if (!alumno) {
@@ -49,7 +43,6 @@ const getAlumnoById = async (req, res, next) => {
 const createAlumno = async (req, res, next) => {
     try {
         const { nombre, dni, materias } = req.body;
-        console.log(req.body);
         if (!nombre || !dni || !Array.isArray(materias) || materias.length === 0) {
             const error = new Error("Faltan datos obligatorios: nombre, dni o materias.");
             error.statusCode = 400;
@@ -64,35 +57,63 @@ const createAlumno = async (req, res, next) => {
             throw error;
         }
 
-        // Validar que todas las materias existan en la BD
-        const nombresMaterias = materias.map(m => m.nombre);
-        const cursosMaterias = materias.map(m => m.curso);
+        
+        if (
+            materias.some(
+                m =>
+                    !m.nombre ||
+                    !m.curso ||
+                    !m.profesor ||
+                    !m.profesor.id ||
+                    !m.profesor.nombre
+            )
+        ) {
+            const error = new Error(
+                "Cada materia debe incluir nombre, curso y profesor (con id y nombre)."
+            );
+            error.statusCode = 400;
+            throw error;
+        }
 
-        const materiasEnBD = await Materia.find({
-            nombre: { $in: nombresMaterias },
-            curso: { $in: cursosMaterias }
-        });
+        const filtros = materias.map(m => ({
+            nombre: m.nombre,
+            curso: m.curso,
+            "profesor._id": m.profesor._id
+        }));
+
+
+        const materiasEnBD = await Materia.find({ $or: filtros });
 
         if (materiasEnBD.length !== materias.length) {
-            const faltantes = materias.filter(m =>
-                !materiasEnBD.some(db => db.nombre === m.nombre && db.curso === m.curso)
+            const faltantes = materias.filter(
+                m =>
+                    !materiasEnBD.some(
+                        db =>
+                            db.nombre === m.nombre &&
+                            db.curso === m.curso &&
+                            db.profesor._id.toString() === m.profesor._id.toString()
+                    )
             );
-            const nombresFaltantes = faltantes.map(f => `${f.nombre} (${f.curso})`).join(", ");
-            const error = new Error(`Las siguientes materias no existen: ${nombresFaltantes}`);
+
+            const nombresFaltantes = faltantes
+                .map(f => `${f.nombre} (${f.curso}) - Profesor ${f.profesor.nombre}`)
+                .join(", ");
+
+            const error = new Error(
+                `Las siguientes materias no existen en la base de datos: ${nombresFaltantes}`
+            );
             error.statusCode = 404;
             throw error;
         }
 
-        // Crear la estructura interna del alumno
         const materiasAlumno = materias.map(m => ({
             nombre: m.nombre,
-            curso: m.curso, 
-            profesor: { nombre: m.profesor?.nombre || "Sin asignar" },
+            curso: m.curso,
+            profesor: { nombre: m.profesor.nombre },
             notas: [],
             asistencias: []
         }));
 
-        // Crear el documento del alumno
         const nuevoAlumno = new Alumno({
             nombre,
             dni,
@@ -121,7 +142,6 @@ const updateAlumno = async (req, res, next) => {
         const { id } = req.params;
         const datosBody = req.body;
 
-        // Validación básica: debe haber al menos un campo para actualizar
         if (
             !datosBody.dni &&
             !datosBody.nombre &&
@@ -133,7 +153,6 @@ const updateAlumno = async (req, res, next) => {
             throw error;
         }
 
-        // Llamada al servicio
         const alumnoActualizado = await actualizarAlumno(id, datosBody);
 
         res.json({

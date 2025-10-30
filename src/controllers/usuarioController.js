@@ -2,6 +2,8 @@
 const Usuario = require("../models/usuarioModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const Alumno = require("../models/alumnoModel");
+const Profesor = require("../models/profesorModel");
 
 const paginate = require("../utils/paginar");
 
@@ -69,7 +71,6 @@ const createUsuario = async (req, res, next) => {
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-
         let hijosFormateados = [];
         if (rol === "padre" && Array.isArray(hijos)) {
             hijosFormateados = hijos.map(h => typeof h === "string" ?
@@ -79,6 +80,7 @@ const createUsuario = async (req, res, next) => {
 
             const dnis = hijosFormateados.map(h => h.dni);
             const alumnosExistentes = await Alumno.find({ dni: { $in: dnis } });
+            console.log(alumnosExistentes);
             if (alumnosExistentes.length !== dnis.length) {
                 const error = new Error("Algún DNI asignado no corresponde a un alumno existente");
                 error.statusCode = 400;

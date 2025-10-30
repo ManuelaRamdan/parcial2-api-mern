@@ -6,118 +6,113 @@ const _ = require("lodash");
 
 const actualizarAlumno = async (id, actualizarDatos) => {
 
-        const alumno = await Alumno.findOne({ _id: id, activo: true });
-        if (!alumno) {
-            const error = new Error("Alumno no encontrado");
+    const alumno = await Alumno.findOne({ _id: id, activo: true });
+    if (!alumno) {
+        const error = new Error("Alumno no encontrado");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    const dniViejo = alumno.dni;
+
+    if (actualizarDatos.dni !== undefined) {
+        if (Number(actualizarDatos.dni) <= 0) {
+            const error = new Error("El DNI debe ser mayor que 0");
+            error.statusCode = 422;
+            throw error;
+        }
+        const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni, _id: { $ne: id } });
+        if (alumnoExistente) {
+            const error = new Error(`Ya existe un alumno con el DNI ${actualizarDatos.dni}`);
+            error.statusCode = 409;
+            throw error;
+        }
+        alumno.dni = actualizarDatos.dni;
+    }
+
+
+    if (actualizarDatos.nombre !== undefined) alumno.nombre = actualizarDatos.nombre;
+
+
+    if (actualizarDatos.activo !== undefined) alumno.activo = actualizarDatos.activo;
+
+    if (Array.isArray(actualizarDatos.materias)) {
+        const materiasDB = await Materia.find({
+            $or: actualizarDatos.materias.map(m => ({ nombre: m.nombre, curso: m.curso }))
+        });
+
+        // Validaciones usando programación funcional
+        const materiaInvalida = actualizarDatos.materias.find(
+            m => !materiasDB.some(dbM => dbM.nombre === m.nombre && dbM.curso === m.curso)
+        );
+        if (materiaInvalida) {
+            const error = new Error(`La materia ${materiaInvalida.nombre} curso ${materiaInvalida.curso} no existe`);
             error.statusCode = 404;
             throw error;
         }
 
-        const dniViejo = alumno.dni;
-
-        if (actualizarDatos.dni !== undefined) {
-            //parseInt(nroHijosCad)
-            if (Number(actualizarDatos.dni) <= 0) {
-                const error = new Error("El DNI debe ser mayor que 0");
-                error.statusCode = 422;
-                throw error;
-            }
-            const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni, _id: { $ne: id } });
-            if (alumnoExistente) {
-                const error = new Error(`Ya existe un alumno con el DNI ${actualizarDatos.dni}`);
-                error.statusCode = 409;
-                throw error;
-            }
-            alumno.dni = actualizarDatos.dni;
+        const noInscripto = actualizarDatos.materias.find(
+            m => !alumno.materias.some(am => am.nombre === m.nombre && am.curso === m.curso)
+        );
+        if (noInscripto) {
+            const error = new Error(`El alumno no está inscripto en la materia ${noInscripto.nombre} curso ${noInscripto.curso}`);
+            error.statusCode = 422;
+            throw error;
         }
 
+        alumno.materias = alumno.materias.map(materia => ({
+            ...materia,
+            notas: actualizarNotas(materia.notas, materiaUpdate.notas),
+            asistencias: actualizarAsistencias(materia.asistencias, materiaUpdate.asistencias),
+        }));
 
-        if (actualizarDatos.nombre !== undefined) alumno.nombre = actualizarDatos.nombre;
-
-
-        if (actualizarDatos.activo !== undefined) alumno.activo = actualizarDatos.activo;
-
-        if (Array.isArray(actualizarDatos.materias)) {
-            // Buscar todas las materias que vienen en la actualización
-            const materiasDB = await Materia.find({
-                $or: actualizarDatos.materias.map(m => ({ nombre: m.nombre, curso: m.curso }))
-            });
-
-            // Validaciones usando programación funcional
-            const materiaInvalida = actualizarDatos.materias.find(
-                m => !materiasDB.some(dbM => dbM.nombre === m.nombre && dbM.curso === m.curso)
-            );
-            if (materiaInvalida) {
-                const error = new Error(`La materia ${materiaInvalida.nombre} curso ${materiaInvalida.curso} no existe`);
-                error.statusCode = 404;
-                throw error;
-            }
-
-            const noInscripto = actualizarDatos.materias.find(
-                m => !alumno.materias.some(am => am.nombre === m.nombre && am.curso === m.curso)
-            );
-            if (noInscripto) {
-                const error = new Error(`El alumno no está inscripto en la materia ${noInscripto.nombre} curso ${noInscripto.curso}`);
-                error.statusCode = 422;
-                throw error;
-            }
-
-            // Actualización funcional de materias
-            alumno.materias = alumno.materias.map(materia => {
-                const materiaUpdate = actualizarDatos.materias.find(
-                    m => m.nombre === materia.nombre && m.curso === materia.curso
-                );
-                if (!materiaUpdate) return materia;
-
-                return {
-                    ...materia,
-                    notas: actualizarNotas(materia.notas, materiaUpdate.notas),
-                    asistencias: actualizarAsistencias(materia.asistencias, materiaUpdate.asistencias),
-                };
-            });
-        }
+    }
 
 
-        await alumno.save();
+    await alumno.save();
 
-        await sincronizarAlumnoConColecciones(alumno, dniViejo);
-        return alumno;
+    await sincronizarAlumnoConColecciones(alumno, dniViejo);
+    return alumno;
 
 };
 
 
 const actualizarNotas = (notasAlumno = [], notasActualizadas = []) => {
-    if (!Array.isArray(notasActualizadas)) return notasAlumno;
+    if (Array.isArray(notasActualizadas)) {
+        notasAlumno = notasActualizadas.reduce((acc, notaUpdate) => {
 
-    return notasActualizadas.reduce((acc, notaUpdate) => {
+            const existe = acc.some(n => n.tipo === notaUpdate.tipo);
 
-        // Buscar si ya existe la nota
-        const index = acc.findIndex((n) => n.tipo === notaUpdate.tipo);
-        if (index >= 0) {
-            acc[index].nota = notaUpdate.nota; // Actualiza nota existente
-        } else {
-            acc.push(notaUpdate); // Agrega nueva nota
-        }
+            let nuevasNotas;
 
-        return acc;
-    }, [...notasAlumno]); // Clonamos para no mutar el array original
+            if (existe) {
+                nuevasNotas = acc.map(n =>
+                    n.tipo === notaUpdate.tipo
+                        ? { ...n, tipo: notaUpdate.tipo, nota: notaUpdate.nota }
+                        : n
+                );
+            } else {
+                nuevasNotas = [...acc, { tipo: notaUpdate.tipo, nota: notaUpdate.nota }];
+            }
+
+            return nuevasNotas;
+        }, [...notasAlumno]);
+    }
+
+    return notasAlumno;
 };
 
 
-//se usan valores por defecto [] para evitar errores si algún parámetro viene undefined
 
 const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas = []) => {
     if (Array.isArray(asistenciasActualizadas)) {
-        //reduce se usa para iterer cada elemento del array y mantener el acumulador donde de acumula el resultado final
-        // acc -> empieza siendo las asistencias actuales (asistenciasAlumnoSub) y se va modificando con cada iteración.
-        //asisUpdate -> cada asistencia que queremos aplicar.
+
         asistenciasAlumno = asistenciasActualizadas.reduce((acc, asisUpdate) => {
             const fechaUpdate = new Date(asisUpdate.fecha);
 
             if (isNaN(fechaUpdate)) {
-                // Lanzar error atrapado por el middleware
                 const error = new Error(`Fecha inválida en asistencia: "${asisUpdate.fecha}"`);
-                error.statusCode = 422; //errores en la sementica
+                error.statusCode = 422;
                 throw error;
             }
             const fechaISO = fechaUpdate.toISOString().slice(0, 10);
@@ -127,15 +122,17 @@ const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas =
                 return fechaExistenteISO === fechaISO;
             });
 
+            let nuevasAsistencias;
+
             if (existe) {
-                return acc.map(a => {
+                nuevasAsistencias = acc.map(a => {
                     const fechaExistenteISO = new Date(a.fecha).toISOString().slice(0, 10);
                     return fechaExistenteISO === fechaISO
                         ? { ...a, fecha: fechaUpdate, presente: asisUpdate.presente }
                         : a;
                 });
             } else {
-                return [...acc, { fecha: fechaUpdate, presente: asisUpdate.presente }];
+                nuevasAsistencias = [...acc, { fecha: fechaUpdate, presente: asisUpdate.presente }];
             }
         }, asistenciasAlumno);
     }
@@ -182,26 +179,15 @@ const actualizarDniEnUsuarios = async (dniViejo, alumno) => {
 };
 
 
-// Actualizar datos en profesores
+
 const actualizarProfesores = async (alumno, dniViejo) => {
     const { nombre, dni, materias, activo } = alumno;
 
-        //obtener todos los documentos Profesor cuyo array materiasDictadas contenga un subdocumento alumnos con dni === dniViejo
-        const profesores = await Profesor.find({ "materiasDictadas.alumnos.dni": dniViejo });
-        //usa Promise.all para actualizar múltiples profesores en paralelo.
-        // promise para ejecutar varias operaciones asincronicas una por profesor y esperar a que todas terminen para seguir
-        await Promise.all(
-            profesores.map(prof => procesarProfesor(prof, alumno, dniViejo))
-        );
+    const profesores = await Profesor.find({ "materiasDictadas.alumnos.dni": dniViejo });
 
-        // profesores es un array de todos los profesores donde aparece ese alumno.
-        // con map, se va profe por profesor y se ejecuta la funcion procesarProfesor que devuelve una promesa que resuelve cuando el await prof.save() termina o lanza un error.
-        // Termina map y te queda un array de promesas pendientes
-        // promise. all recibe ese array y espera que se resulvan las promesas pendientes.
-        // cuando termina devuelve el array con los resultados que son underfined pq procesarProfesor no devuelve nada, es solo para saber que no hubo error
-        // si hay un error se lo lanza al middelware de errores
-
-        // sin promise.all, llega el primer prof.save y termina sin pasar por el siguiente promesa, pero con promise.all todos los prof.save se hacen el paralelo no secuencial 
+    await Promise.all(
+        profesores.map(prof => procesarProfesor(prof, alumno, dniViejo))
+    );
 
 };
 
@@ -209,24 +195,17 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
     const { nombre, dni, materias, activo } = alumno;
     let huboCambios = false;
 
-    //prof.materiasDictadas es un array con todas las materias que dicta ese profesor
-    //map devuelve un nuevo array con los resultados de la funcion y lo guarda en materias nuevas 
     const materiasNuevas = prof.materiasDictadas.map(materiaDictada => {
-        //busca el primer elemento que cumpla esa condicion
         const materiaAlumno = materias.find(
             m => m.nombre === materiaDictada.nombre && m.curso === materiaDictada.curso
         );
 
-        // con ... copia todas las propiedades de materiaDictada en materiaActualizada permitiendo modificar la copia 
         let materiaActualizada = { ...materiaDictada };
 
-        //si el alumno cursa ese materia 
         if (materiaAlumno) {
-            // materiaDictada.alumnos es el array de alumnos que tiene esta materia en el profesor
-            // map -> recorre cada alumno (alumnoSub) y genera un nuevo array (nuevosAlumnos).
+
             const nuevosAlumnos = materiaDictada.alumnos.map(alumnoSub => {
 
-                // con ... copia todas las propiedades de alumnoSub en alumnoActualizado permitiendo modificar la copia 
                 let alumnoActualizado = { ...alumnoSub };
 
                 if (alumnoSub.dni === dniViejo) {
@@ -234,10 +213,6 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
                     const nuevasNotas = actualizarNotas(alumnoSub.notas, materiaAlumno.notas);
                     const nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias);
 
-                    //_.isEqual es una función de Lodash -> libreria de js
-                    //comparar dos valores en profundidad y devuelve true si son iguales, por eso tiene !
-                    //
-                    //cambio -> indica si hay algo que actualizar en el alumno
                     const cambio =
                         alumnoSub.nombre !== nombre ||
                         alumnoSub.dni !== dni ||
@@ -248,10 +223,8 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
                     if (cambio) {
                         huboCambios = true;
 
-                        // alumnoActualizado es un nuevo objeto que mantiene todo lo que no cambió y actualiza lo que cambió.
 
                         alumnoActualizado = {
-                            // copiamos las propiedades de alumnoSub al nuevo objeto y despues las sobre escribimos con las nuevas cosas
                             ...alumnoSub,
                             nombre,
                             dni,
@@ -272,82 +245,77 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
     });
 
     if (huboCambios) {
-        // reemplazamos el array original (prof.materiasDictadas) por el nuevo
         prof.materiasDictadas = materiasNuevas;
-        // se usa markModified pq cuando se hace cambios en algo anidados mongoose no los guarda, pero pobiendo eso sabe que os tiene que guardar cuando se haga el prof.save()
         prof.markModified("materiasDictadas");
         await prof.save();
     }
 };
 
 const agregarAlumnoEnMaterias = async (alumno) => {
-    if (!alumno || !Array.isArray(alumno.materias)) return;
-
-    await Promise.all(
-        alumno.materias.map(async (materiaAlumno) => {
-            const result = await Materia.updateOne(
-                { nombre: materiaAlumno.nombre, curso: materiaAlumno.curso },
-                {
-                    $addToSet: {
-                        alumnos: {
-                            nombre: alumno.nombre,
-                            dni: alumno.dni,
-                            activo: alumno.activo ?? true,
+    if (alumno && Array.isArray(alumno.materias)) {
+        await Promise.all(
+            alumno.materias.map(async (materiaAlumno) => {
+                const result = await Materia.updateOne(
+                    { nombre: materiaAlumno.nombre, curso: materiaAlumno.curso },
+                    {
+                        $addToSet: {
+                            alumnos: {
+                                nombre: alumno.nombre,
+                                dni: alumno.dni,
+                                activo: alumno.activo ?? true,
+                            }
                         }
                     }
-                }
-            );
-        })
-    );
+                );
+            })
+        );
+    }
+
 };
 
 const agregarAlumnoEnProfesores = async (alumno) => {
-    if (!alumno || !Array.isArray(alumno.materias)) return;
+    if (alumno && Array.isArray(alumno.materias)) {
+        const materiasAlumno = alumno.materias.map(m => m.nombre);
 
-    const materiasAlumno = alumno.materias.map(m => m.nombre);
+        const profesores = await Profesor.find({
+            "materiasDictadas.nombre": { $in: materiasAlumno },
+        });
 
-    const profesores = await Profesor.find({
-        "materiasDictadas.nombre": { $in: materiasAlumno },
-    });
+        await Promise.all(
+            profesores.map(async (prof) => {
+                let huboCambios = false;
 
-    await Promise.all(
-        profesores.map(async (prof) => {
-            let huboCambios = false;
+                const nuevasMaterias = prof.materiasDictadas.map(materiaDictada => {
+                    const coincide = alumno.materias.some(
+                        m => m.nombre === materiaDictada.nombre && m.curso === materiaDictada.curso
+                    );
+                    const yaExiste = materiaDictada.alumnos.some(a => a.dni === alumno.dni);
 
-            const nuevasMaterias = prof.materiasDictadas.map(materiaDictada => {
-                const coincide = alumno.materias.some(
-                    m => m.nombre === materiaDictada.nombre && m.curso === materiaDictada.curso
-                );
-
-                if (!coincide) return materiaDictada;
-
-                const yaExiste = materiaDictada.alumnos.some(a => a.dni === alumno.dni);
-                if (yaExiste) return materiaDictada;
-
-                huboCambios = true;
-
-                return {
-                    ...materiaDictada,
-                    alumnos: [
-                        ...materiaDictada.alumnos,
-                        {
+                    const alumnosActualizados = (coincide && !yaExiste)
+                        ? [...materiaDictada.alumnos, {
                             nombre: alumno.nombre,
                             dni: alumno.dni,
                             activo: alumno.activo ?? true,
                             notas: [],
                             asistencias: []
-                        }
-                    ]
-                };
-            });
+                        }]
+                        : materiaDictada.alumnos;
 
-            if (huboCambios) {
-                prof.materiasDictadas = nuevasMaterias;
-                prof.markModified("materiasDictadas");
-                await prof.save();
-            }
-        })
-    );
+                    if (coincide && !yaExiste) huboCambios = true;
+
+                    return { ...materiaDictada, alumnos: alumnosActualizados };
+                });
+
+                if (huboCambios) {
+                    prof.materiasDictadas = nuevasMaterias;
+                    prof.markModified("materiasDictadas");
+                    await prof.save();
+                }
+            })
+        );
+    }
+
+
 };
 
 
