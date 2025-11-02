@@ -93,6 +93,12 @@ const actualizarNotas = (notasAlumno = [], notasActualizadas = []) => {
             throw error;
         }
 
+        if (notaUpdate.nota <= 0 || notaUpdate.nota > 10) {
+            const error = new Error("Cada nota debe ser mayor que 0 y menor o igual a 10");
+            error.statusCode = 422;
+            throw error;
+        }
+
         const existe = acc.some(n => n.tipo === notaUpdate.tipo);
         return existe
             ? acc.map(n => (n.tipo === notaUpdate.tipo ? { ...n, nota: notaUpdate.nota } : n))
