@@ -2,7 +2,7 @@ const Usuario = require("../models/usuarioModel");
 const Alumno = require("../models/alumnoModel");
 
 const obtenerHijosActivosPorPadre = async (idPadre) => {
-  const padre = await Usuario.findById(idPadre);
+  const padre = await Usuario.findOne({ _id: idPadre, rol: "padre" });
 
   if (!padre) {
     const error = new Error("Padre no encontrado");
