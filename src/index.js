@@ -30,7 +30,7 @@ app.use('/api/padre',padreRouter );
 const errorHandler = require('./middlewares/errorHandler');
 app.use(errorHandler); // Middleware para manejo de errores
 
-// Inicio del server
+
 app.listen(port, () => {
   console.log(`Servidor escuchando en ${port}`);
 });

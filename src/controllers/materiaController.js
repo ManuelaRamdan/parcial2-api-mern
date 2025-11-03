@@ -3,31 +3,27 @@ const Materia = require("../models/materiaModel");
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
 
-
 const paginate = require("../utils/paginar");
+
+const filtrarAlumnosActivos = (materia) => ({
+    ...materia.toObject(),
+    alumnos: materia.alumnos.filter(a => a.activo)
+});
 
 const getAllMaterias = async (req, res, next) => {
     try {
+        const result = await paginate(Materia, req, { sort: { nombre: 1 } });
 
-        const curso = req.query.curso; // ejemplo: /api/materias?curso=2A
-
-        const query = curso ? { curso } : {}; // si no viene, muestra todas
-
-        const result = await paginate(Materia, req, {
-            query,
-            sort: { nombre: 1 },
-        });
+        const materiasFiltradas = result.data.map(filtrarAlumnosActivos);
 
         res.json({
-            materias: result.data,
+            materias: materiasFiltradas,
             pagination: result.pagination
         });
     } catch (err) {
         next(err);
     }
 };
-
-// Obtener por ID
 
 const getMateriaById = async (req, res, next) => {
     try {
@@ -36,47 +32,41 @@ const getMateriaById = async (req, res, next) => {
             const error = new Error("Materia no encontrada");
             error.statusCode = 404;
             throw error;
-        } else {
-            res.json(materia);
         }
+        res.json(filtrarAlumnosActivos(materia));
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
 
+const obtenerMateriasPorProfesor = async (profesorId) => {
+    return Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
+};
+
 const getMateriaByProfe = async (req, res, next) => {
     try {
-        const profesorId = req.user.profesorId;
-        console.log(profesorId);
-        const materias = await Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
-        if (!materias || materias.length === 0) {
+        const materias = await obtenerMateriasPorProfesor(req.user.profesorId);
+        if (materias.length === 0) {
             const error = new Error("No se encontraron materias para este profesor");
             error.statusCode = 404;
             throw error;
-        } else {
-            res.json(materias);
         }
+        res.json(materias.map(filtrarAlumnosActivos));
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
 
 const getMateriaByIdProfe = async (req, res, next) => {
     try {
-        const profesorId = req.params.id;
-        console.log(profesorId);
-        const materias = await Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) });
-        if (!materias || materias.length === 0) {
+        const materias = await obtenerMateriasPorProfesor(req.params.id);
+        if (materias.length === 0) {
             const error = new Error("No se encontraron materias para este profesor");
             error.statusCode = 404;
             throw error;
-        } else {
-            res.json(materias);
         }
+        res.json(materias.map(filtrarAlumnosActivos));
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };

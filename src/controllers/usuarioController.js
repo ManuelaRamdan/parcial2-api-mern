@@ -2,16 +2,32 @@
 const Usuario = require("../models/usuarioModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-
-
+const Alumno = require("../models/alumnoModel");
+const Profesor = require("../models/profesorModel");
 
 const paginate = require("../utils/paginar");
 
+const filtrarHijosActivos = (usuarioDoc) => {
+    const usuario = usuarioDoc.toObject ? usuarioDoc.toObject() : usuarioDoc;
+
+    if (usuario.rol === "padre" && Array.isArray(usuario.hijos)) {
+        usuario.hijos = usuario.hijos.filter(hijo => hijo.activo);
+    }
+
+    delete usuario.password;
+
+    return usuario;
+};
+
+
 const getAllUsuarios = async (req, res, next) => {
     try {
-        const result = await paginate(Usuario, req);
+        const result = await paginate(Usuario, req, { select: "-password" });
+
+        const usuariosProcesados = result.data.map(filtrarHijosActivos);
+
         res.json({
-            usuarios: result.data,
+            usuarios: usuariosProcesados,
             pagination: result.pagination
         });
     } catch (err) {
@@ -20,30 +36,30 @@ const getAllUsuarios = async (req, res, next) => {
 };
 
 
-// Obtener por ID
-
 const getUsuarioById = async (req, res, next) => {
     try {
-        const usuario = await Usuario.findById(req.params.id);
+        const usuario = await Usuario.findById(req.params.id).select("-password");
+
         if (!usuario) {
-            //404 -> El servidor no pudo encontrar el contenido solicitado
             const error = new Error("Usuario no encontrado");
             error.statusCode = 404;
             throw error;
-        } else {
-            res.json(usuario);
         }
 
+        const usuarioFiltrado = filtrarHijosActivos(usuario);
+        res.json(usuarioFiltrado);
+
     } catch (err) {
-        //500 -> El servidor ha encontrado una situación que no sabe cómo manejar
         next(err);
     }
 };
 
+
+
 // Crear nuevo hacer esto de nuevo con bycript
 const createUsuario = async (req, res, next) => {
     try {
-        const { nombre, email, password, rol, hijos } = req.body;
+        const { nombre, email, password, rol, hijos, profesorId } = req.body;
 
         // Verificar si el usuario ya existe
         const usuarioExistente = await Usuario.findOne({ email });
@@ -53,17 +69,48 @@ const createUsuario = async (req, res, next) => {
             throw error;
         }
 
-        // Hashear la contraseña
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
+        let hijosFormateados = [];
+        if (rol === "padre" && Array.isArray(hijos)) {
+            hijosFormateados = hijos.map(h => typeof h === "string" ?
+                { dni: h, activo: true } :
+                { dni: h.dni, activo: h.activo !== undefined ? h.activo : true }
+            );
 
-        // Crear nuevo usuario
+            const dnis = hijosFormateados.map(h => h.dni);
+            const alumnosExistentes = await Alumno.find({ dni: { $in: dnis } });
+            console.log(alumnosExistentes);
+            if (alumnosExistentes.length !== dnis.length) {
+                const error = new Error("Algún DNI asignado no corresponde a un alumno existente");
+                error.statusCode = 400;
+                throw error;
+            }
+        }
+
+        let profesorIdValido = null;
+        if (rol === "profesor") {
+            if (!profesorId) {
+                const error = new Error("Profesor debe tener un profesorId asignado");
+                error.statusCode = 400;
+                throw error;
+            }
+            const profesorExistente = await Profesor.findById(profesorId);
+            if (!profesorExistente) {
+                const error = new Error("El profesor indicado no existe");
+                error.statusCode = 400;
+                throw error;
+            }
+            profesorIdValido = profesorId;
+        }
+
         const nuevoUsuario = new Usuario({
             nombre,
             email,
             password: hashedPassword,
             rol,
-            hijos
+            hijos: hijosFormateados,
+            profesorId: profesorIdValido
         });
 
         const savedUsuario = await nuevoUsuario.save();
@@ -75,7 +122,8 @@ const createUsuario = async (req, res, next) => {
                 nombre: savedUsuario.nombre,
                 email: savedUsuario.email,
                 rol: savedUsuario.rol,
-                hijos: savedUsuario.hijos
+                hijos: savedUsuario.hijos,
+                profesorId: savedUsuario.profesorId
             },
         });
 
@@ -83,7 +131,6 @@ const createUsuario = async (req, res, next) => {
         next(err);
     }
 };
-
 
 const loginUsuario = async (req, res, next) => {
     try {

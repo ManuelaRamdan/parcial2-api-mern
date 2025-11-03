@@ -1,4 +1,4 @@
-// src/controllers/usuarioController.js
+
 const Alumno = require("../models/alumnoModel");
 const { actualizarAlumno, agregarAlumnoEnMaterias, agregarAlumnoEnProfesores } = require("../service/alumnoService");
 const Materia = require("../models/materiaModel");
@@ -8,7 +8,11 @@ const paginate = require("../utils/paginar");
 
 const getAllAlumnos = async (req, res, next) => {
     try {
-        const result = await paginate(Alumno, req, { sort: { nombre: 1 } });
+        const result = await paginate(Alumno, req, {
+            filter: { activo: true },
+            sort: { nombre: 1 }
+        });
+
         res.json({
             alumnos: result.data,
             pagination: result.pagination
@@ -19,82 +23,112 @@ const getAllAlumnos = async (req, res, next) => {
 };
 
 
-
-
-//404 -> El servidor no pudo encontrar el contenido solicitado
-
 const getAlumnoById = async (req, res, next) => {
     try {
-        const alumno = await Alumno.findById(req.params.id);
+        const alumno = await Alumno.findOne({ _id: req.params.id, activo: true });
+
         if (!alumno) {
-            const error = new Error("Alumno no encontrado");
+            const error = new Error("Alumno no encontrado o inactivo");
             error.statusCode = 404;
             throw error;
         }
 
         res.json(alumno);
-
-
     } catch (err) {
         next(err);
-
     }
 };
 
 
 const createAlumno = async (req, res, next) => {
-    //que se ponga el alumno a las materias y profesores con esas meterias
     try {
-        const { nombre, dni, curso } = req.body;
-
-        if (!nombre || !dni || !curso) {
-            const error = new Error("Faltan datos obligatorios: nombre, dni o curso.");
+        const { nombre, dni, materias } = req.body;
+        if (!nombre || !dni || !Array.isArray(materias) || materias.length === 0) {
+            const error = new Error("Faltan datos obligatorios: nombre, dni o materias.");
             error.statusCode = 400;
             throw error;
         }
 
+        // Verificar duplicado de DNI
         const alumnoExistente = await Alumno.findOne({ dni });
         if (alumnoExistente) {
             const error = new Error(`Ya existe un alumno registrado con el DNI ${dni}.`);
-            error.statusCode = 409; // 409 = Conflicto (recurso duplicado)
+            error.statusCode = 409;
             throw error;
         }
 
-        // Buscar las materias del curso
-        const materiasCurso = await Materia.find({ curso });
+        
+        if (
+            materias.some(
+                m =>
+                    !m.nombre ||
+                    !m.curso ||
+                    !m.profesor ||
+                    !m.profesor.id ||
+                    !m.profesor.nombre
+            )
+        ) {
+            const error = new Error(
+                "Cada materia debe incluir nombre, curso y profesor (con id y nombre)."
+            );
+            error.statusCode = 400;
+            throw error;
+        }
 
-        if (!materiasCurso.length) {
-            const error = new Error(`No se encontraron materias para el curso ${curso}.`);
+        const filtros = materias.map(m => ({
+            nombre: m.nombre,
+            curso: m.curso,
+            "profesor._id": m.profesor._id
+        }));
+
+
+        const materiasEnBD = await Materia.find({ $or: filtros });
+
+        if (materiasEnBD.length !== materias.length) {
+            const faltantes = materias.filter(
+                m =>
+                    !materiasEnBD.some(
+                        db =>
+                            db.nombre === m.nombre &&
+                            db.curso === m.curso &&
+                            db.profesor._id.toString() === m.profesor._id.toString()
+                    )
+            );
+
+            const nombresFaltantes = faltantes
+                .map(f => `${f.nombre} (${f.curso}) - Profesor ${f.profesor.nombre}`)
+                .join(", ");
+
+            const error = new Error(
+                `Las siguientes materias no existen en la base de datos: ${nombresFaltantes}`
+            );
             error.statusCode = 404;
             throw error;
         }
 
-        // Crear la estructura de materias para el alumno
-        const materiasAlumno = materiasCurso.map(materia => ({
-            nombre: materia.nombre,
-            profesor: {
-                nombre: materia.profesor?.nombre || "Sin asignar"
-            },
+        const materiasAlumno = materias.map(m => ({
+            nombre: m.nombre,
+            curso: m.curso,
+            profesor: { nombre: m.profesor.nombre },
             notas: [],
             asistencias: []
         }));
 
-        // Crear y guardar el alumno
         const nuevoAlumno = new Alumno({
             nombre,
             dni,
-            curso,
-            materias: materiasAlumno
+            materias: materiasAlumno,
+            activo: true
         });
 
         await nuevoAlumno.save();
 
+        // Sincronizar en colecciones Materia y Profesor
         await agregarAlumnoEnMaterias(nuevoAlumno);
         await agregarAlumnoEnProfesores(nuevoAlumno);
 
-        // 201 -> Petición exitosa. Se ha creado un nuevo recurso
         res.status(201).json({
-            message: "Alumno creado correctamente",
+            message: "Alumno creado correctamente y sincronizado",
             alumno: nuevoAlumno
         });
     } catch (err) {
@@ -105,129 +139,43 @@ const createAlumno = async (req, res, next) => {
 
 const updateAlumno = async (req, res, next) => {
     try {
-        const { id, materiaid, curso } = req.params;
-        //const actualizarDatos = req.body;
+        const { id } = req.params;
         const datosBody = req.body;
 
-        let actualizarDatos;
-
-        if (materiaid && curso) {
-            // Profesor: solo puede actualizar notas/asistencias
-            actualizarDatos = {
-                materias: [
-                {
-                    _id: materiaid,
-                    curso,
-                    profesor: req.user.nombre, // pasamos nombre del profe para validar en el servicio
-                    notas: datosBody.nuevaNota ? [datosBody.nuevaNota] : undefined,
-                    asistencias: datosBody.nuevaAsistencia ? [datosBody.nuevaAsistencia] : undefined,
-                },
-                ],
-            };
-        } else {
-             // Admin: puede actualizar todo
-            if (datosBody.curso || datosBody.materias?.some(m => m.profesor)) {
-                const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, se debe hacer desde Materias");
-                error.statusCode = 422;
-                throw error;
-            }
-
-            const alumnoExistente = await Alumno.findOne({ dni: actualizarDatos.dni });
-            if (alumnoExistente) {
-                const error = new Error(`Ya existe un alumno registrado con el DNI ${actualizarDatos.dni}.`);
-                error.statusCode = 409; // 409 = Conflicto (recurso duplicado)
-                throw error;
-            }
-
-            actualizarDatos = datosBody;
-        }
-        
-        /*
-        // Validar que no se modifique curso ni profesor desde aca
-        if (actualizarDatos.curso || actualizarDatos.materias?.some(m => m.profesor)) {
-            const error = new Error("No se puede modificar el curso o el nombre del profesor desde el alumno, se debe hacer desde Materias");
+        if (
+            !datosBody.dni &&
+            !datosBody.nombre &&
+            datosBody.activo === undefined &&
+            !Array.isArray(datosBody.materias)
+        ) {
+            const error = new Error("No hay datos para actualizar");
             error.statusCode = 422;
             throw error;
         }
 
-        if (Array.isArray(actualizarDatos.materias)) {
-            const faltaNombre = actualizarDatos.materias.some(m => !m.nombre);
-            if (faltaNombre) {
-                const error = new Error("Cada materia que se quiera modificar debe tener el campo 'nombre'");
-                error.statusCode = 422;
-                throw error;
-            }
-        }
-        */
-        
+        const alumnoActualizado = await actualizarAlumno(id, datosBody);
 
-        const alumnoActualizado = await actualizarAlumno(id, actualizarDatos, next);
-
-        res.json({ message: "Alumno actualizado correctamente", alumno: alumnoActualizado });
+        res.json({
+            message: "Alumno actualizado correctamente",
+            alumno: alumnoActualizado,
+        });
     } catch (err) {
         next(err);
     }
 };
 
-/*const updateNotasAsistencias = async (req, res, next) => {
-    try {
-        const { id, materiaid, curso } = req.params;
-        const { nuevaNota, nuevaAsistencia } = req.body;
-        const profesorNombre = req.user.nombre;
 
-        const alumno = await Alumno.findById(id);
-        if (!alumno){
-            const error = new Error("Alumno no encontrado" );
-            error.statusCode = 404;
-            throw error;
-        }
-
-        const materia = alumno.materias.find(
-        (m) =>
-            m._id.toString() === materiaid &&
-            m.curso === curso &&
-            m.profesor.nombre === profesorNombre
-        );
-
-        if (!materia)
-        {
-            const error = new Error("No autorizado o materia/curso incorrecto");
-            error.statusCode = 403;
-            throw error;
-        }
-
-        // Si se envía una nueva nota
-        if (nuevaNota) {
-            const existente = materia.notas.find((n) => n.tipo === nuevaNota.tipo);
-            if (existente) existente.nota = nuevaNota.nota;
-            else materia.notas.push(nuevaNota);
-        }
-
-        // Si se envía una nueva asistencia
-        if (nuevaAsistencia) {
-            materia.asistencias.push(nuevaAsistencia);
-        }
-
-        await alumno.save();
-        res.json({ msg: "Actualización exitosa", alumno });
-    } catch (err) {
-        next(err);
-    }
-};*/
 
 
 const deleteAlumno = async (req, res, next) => {
     try {
-        // Llamamos a actualizarAlumno, pasándole el campo activo: false
         const alumnoActualizado = await actualizarAlumno(
             req.params.id,
-            { activo: false },
-            next
+            { activo: false }
         );
 
         res.json({
-            msg: `Alumno con id ${req.params.id} marcado como inactivo correctamente`,
-            alumno: alumnoActualizado
+            msg: `Alumno con id ${req.params.id} marcado como inactivo correctamente`
         });
     } catch (err) {
         next(err);
@@ -239,6 +187,5 @@ module.exports = {
     getAlumnoById,
     createAlumno,
     updateAlumno,
-    //updateNotasAsistencias,
     deleteAlumno
 };
