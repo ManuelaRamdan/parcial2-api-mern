@@ -105,7 +105,7 @@ const actualizarNotas = (notasAlumno = [], notasActualizadas = []) => {
 };
 
 const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas = []) => {
-    if (!Array.isArray(asistenciasActualizadas)) {
+    if (Array.isArray(asistenciasActualizadas)) {
         asistenciasAlumno = asistenciasActualizadas.reduce((acc, asisUpdate) => {
             const fechaUpdate = new Date(asisUpdate.fecha);
             if (isNaN(fechaUpdate)) {
@@ -184,7 +184,7 @@ const actualizarProfesores = async (alumno, dniViejo) => {
 };
 
 const procesarProfesor = async (prof, alumno, dniViejo) => {
-    const { nombre, dni, activo } = alumno; // solo lo que usamos
+    const { nombre, dni, activo } = alumno;
     let huboCambios = false;
 
     const materiasNuevas = prof.materiasDictadas.map(materiaDictada => {
@@ -192,33 +192,37 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
             m => m.nombre === materiaDictada.nombre && m.curso === materiaDictada.curso
         );
 
-        if (!materiaAlumno) return materiaDictada;
+        let nuevosAlumnos = materiaDictada.alumnos;
 
-        const nuevosAlumnos = materiaDictada.alumnos.map(alumnoSub => {
-            if (alumnoSub.dni !== dniViejo) return alumnoSub;
+        if (materiaAlumno) {
+            nuevosAlumnos = materiaDictada.alumnos.map(alumnoSub => {
 
-            const nuevasNotas = actualizarNotas(alumnoSub.notas, materiaAlumno.notas);
-            const nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias);
+                if (alumnoSub.dni === dniViejo) {
+                    let nuevasNotas = actualizarNotas(alumnoSub.notas, materiaAlumno.notas);
+                    let nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias);
 
-            const cambio =
-                alumnoSub.nombre !== nombre ||
-                alumnoSub.dni !== dni ||
-                alumnoSub.activo !== activo ||
-                !_.isEqual(alumnoSub.notas, nuevasNotas) ||
-                !_.isEqual(alumnoSub.asistencias, nuevasAsistencias);
+                    const cambio =
+                        alumnoSub.nombre !== nombre ||
+                        alumnoSub.dni !== dni ||
+                        alumnoSub.activo !== activo ||
+                        !_.isEqual(alumnoSub.notas, nuevasNotas) ||
+                        !_.isEqual(alumnoSub.asistencias, nuevasAsistencias);
 
-            if (!cambio) return alumnoSub;
+                    if (cambio) huboCambios = true;
 
-            huboCambios = true;
-            return {
-                ...alumnoSub,
-                nombre,
-                dni,
-                activo,
-                notas: nuevasNotas,
-                asistencias: nuevasAsistencias,
-            };
-        });
+                    return {
+                        ...alumnoSub,
+                        nombre,
+                        dni,
+                        activo,
+                        notas: nuevasNotas,
+                        asistencias: nuevasAsistencias,
+                    };
+                }
+
+                return alumnoSub; 
+            });
+        }
 
         return { ...materiaDictada, alumnos: nuevosAlumnos };
     });
@@ -228,6 +232,7 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
         await prof.save();
     }
 };
+
 
 
 const agregarAlumnoEnMaterias = async (alumno) => {
