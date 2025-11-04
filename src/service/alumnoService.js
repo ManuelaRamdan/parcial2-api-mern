@@ -60,13 +60,14 @@ const actualizarAlumno = async (id, actualizarDatos) => {
                 mu.nombre === materia.nombre && mu.curso === materia.curso
             );
 
-            if (!materiaUpdate) return materia;
 
-            return {
-                ...materia,
-                notas: actualizarNotas(materia.notas ?? [], materiaUpdate.notas ?? []),
-                asistencias: actualizarAsistencias(materia.asistencias ?? [], materiaUpdate.asistencias ?? []),
-            };
+            return materiaUpdate
+                ? {
+                    ...materia,
+                    notas: actualizarNotas(materia.notas ?? [], materiaUpdate.notas ?? []),
+                    asistencias: actualizarAsistencias(materia.asistencias ?? [], materiaUpdate.asistencias ?? []),
+                }
+                : materia;
         });
     }
 
@@ -220,7 +221,7 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
                     };
                 }
 
-                return alumnoSub; 
+                return alumnoSub;
             });
         }
 

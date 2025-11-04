@@ -80,7 +80,7 @@ const createUsuario = async (req, res, next) => {
 
             const dnis = hijosFormateados.map(h => h.dni);
             const alumnosExistentes = await Alumno.find({ dni: { $in: dnis } });
-            console.log(alumnosExistentes);
+            
             if (alumnosExistentes.length !== dnis.length) {
                 const error = new Error("Algún DNI asignado no corresponde a un alumno existente");
                 error.statusCode = 400;
