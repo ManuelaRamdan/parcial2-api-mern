@@ -4,32 +4,27 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Alumno = require("../models/alumnoModel");
 const Profesor = require("../models/profesorModel");
-const { obtenerHijosActivosPorPadre } = require("../controllers/padreController");
 
 const paginate = require("../utils/paginar");
 
-const filtrarHijosActivos = async (usuarioDoc) => {
+const filtrarHijosActivos = (usuarioDoc) => {
     const usuario = usuarioDoc.toObject ? usuarioDoc.toObject() : usuarioDoc;
+
+    if (usuario.rol === "padre" && Array.isArray(usuario.hijos)) {
+        usuario.hijos = usuario.hijos.filter(hijo => hijo.activo);
+    }
 
     delete usuario.password;
 
-    if (usuario.rol === "padre") {
-        const resultado = await obtenerHijosActivosPorPadre(usuario._id);
-        usuario.hijos = resultado.hijos;
-    }
-
     return usuario;
 };
-
 
 
 const getAllUsuarios = async (req, res, next) => {
     try {
         const result = await paginate(Usuario, req, { select: "-password" });
 
-        const usuariosProcesados = await Promise.all(
-            result.data.map(filtrarHijosActivos)
-        );
+        const usuariosProcesados = result.data.map(filtrarHijosActivos);
 
         res.json({
             usuarios: usuariosProcesados,
@@ -51,7 +46,7 @@ const getUsuarioById = async (req, res, next) => {
             throw error;
         }
 
-        const usuarioFiltrado = await filtrarHijosActivos(usuario);
+        const usuarioFiltrado = filtrarHijosActivos(usuario);
         res.json(usuarioFiltrado);
 
     } catch (err) {
@@ -85,7 +80,7 @@ const createUsuario = async (req, res, next) => {
 
             const dnis = hijosFormateados.map(h => h.dni);
             const alumnosExistentes = await Alumno.find({ dni: { $in: dnis } });
-
+            
             if (alumnosExistentes.length !== dnis.length) {
                 const error = new Error("Algún DNI asignado no corresponde a un alumno existente");
                 error.statusCode = 400;

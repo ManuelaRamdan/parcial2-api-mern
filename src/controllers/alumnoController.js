@@ -39,6 +39,26 @@ const getAlumnoById = async (req, res, next) => {
     }
 };
 
+const getAlumnoByDni = async (req, res, next) => {
+    try {
+        const { dni } = req.params;
+
+        // Busca un alumno activo con ese DNI
+        const alumno = await Alumno.findOne({ dni, activo: true });
+
+        if (!alumno) {
+            const error = new Error("Alumno no encontrado o inactivo");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        res.json(alumno);
+    } catch (err) {
+        next(err);
+    }
+};
+
+
 
 const createAlumno = async (req, res, next) => {
     try {
@@ -57,7 +77,7 @@ const createAlumno = async (req, res, next) => {
             throw error;
         }
 
-        
+
         if (
             materias.some(
                 m =>
@@ -187,5 +207,6 @@ module.exports = {
     getAlumnoById,
     createAlumno,
     updateAlumno,
-    deleteAlumno
+    deleteAlumno,
+    getAlumnoByDni
 };
