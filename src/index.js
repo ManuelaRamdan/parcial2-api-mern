@@ -12,6 +12,7 @@ const materiasRouter = require('./routes/materiaRoutes');
 const alumnoRouter = require('./routes/alumnoRoutes');
 const profesorRouter = require('./routes/profesorRoutes');
 const padreRouter = require('./routes/padreRoutes');
+const cursoRouter = require('./routes/cursoRoutes');
 
 const app = express();
 app.use(cors());// Middleware para habilitar CORS -> permite solicitudes desde otros dominios
@@ -23,6 +24,7 @@ connectDB();
 
 app.use('/api/usuarios', usuariosRouter);
 app.use('/api/materias', materiasRouter);
+app.use('/api/cursos', cursoRouter);
 app.use('/api/alumnos', alumnoRouter);
 app.use('/api/profesores',profesorRouter );
 app.use('/api/padre',padreRouter );
