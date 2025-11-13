@@ -4,7 +4,7 @@ const Profesor = require("../models/profesorModel");
 const paginate = require("../utils/paginar");
 
 const { actualizarAlumno } = require("../service/alumnoService");
-const Materia = require('../models/materiaModel');
+const Curso = require('../models/cursoModel');
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -89,32 +89,59 @@ const actualizarNotasAsistenciasDelAlumno = async (req, res, next) => {
       throw error;
     }
 
+    
     const campoNoPermitido = materias.find(m => {
       const claves = Object.keys(m);
-      return claves.some(k => !["nombre", "curso", "profesor", "notas", "asistencias"].includes(k));
+      return claves.some(
+        k =>
+          ![
+            "idCurso",
+            "nombreCurso",
+            "division",
+            "nivel",
+            "anio",
+            "notas",
+            "asistencias",
+          ].includes(k)
+        );
+      });
+      
+      if (campoNoPermitido) {
+        const error = new Error(
+          "Solo se pueden enviar idCurso, nombreCurso, division, nivel, anio,  notas y asistencias"
+        );
+        error.statusCode = 403;
+        throw error;
+      }
+      
+      const materiasDelProfe = await Curso.find({
+        "profesor.id": ObjectId.createFromHexString(profesorId),
+      }).select("idCurso nombreMateria division nivel anio");
+      
+    const materiasInvalidas = materias.filter(m => {
+      return !materiasDelProfe.some(md =>
+        m.idCurso
+          ? md._id?.toString() === m.idCurso
+          : md.nombreMateria === m.nombreMateria &&
+          md.division === m.division &&
+          md.nivel === m.nivel &&
+          md.anio === m.anio
+      );
     });
-    
-    if (campoNoPermitido) {
-      const error = new Error("Solo se pueden enviar nombre, curso, profesor, notas y asistencias");
-      error.statusCode = 403;
-      throw error;
-    }
 
-
-    const materiasDelProfe = await Materia.find({ 'profesor.id': ObjectId.createFromHexString(profesorId) }).select("nombre curso");
-
-    const materiasInvalidas = materias.filter(m =>
-      !materiasDelProfe.some(md => md.nombre === m.nombre && md.curso === m.curso)
-    );
     if (materiasInvalidas.length > 0) {
       const error = new Error("Solo se pueden modificar materias que dicta el profesor logueado");
       error.statusCode = 403;
       throw error;
     }
+
     const datosPermitidos = {
       materias: materias.map(m => ({
-        nombre: m.nombre,
-        curso: m.curso,
+        idCurso: m.idCurso,
+        nombreMateria: m.nombreMateria,
+        division: m.division,
+        nivel: m.nivel,
+        anio: m.anio,
         profesor: { _id: profesorId, nombre: m.profesor?.nombre || "" },
         notas: Array.isArray(m.notas) ? m.notas : [],
         asistencias: Array.isArray(m.asistencias) ? m.asistencias : [],
@@ -127,7 +154,6 @@ const actualizarNotasAsistenciasDelAlumno = async (req, res, next) => {
       message: "Notas y asistencias actualizadas correctamente",
       alumno: alumnoActualizado,
     });
-
   } catch (error) {
     next(error);
   }

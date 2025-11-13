@@ -1,6 +1,6 @@
 
 const Alumno = require("../models/alumnoModel");
-const { actualizarAlumno, agregarAlumnoEnMaterias, agregarAlumnoEnProfesores } = require("../service/alumnoService");
+const { actualizarAlumno, agregarAlumnoEnCursos, agregarAlumnoEnProfesores } = require("../service/alumnoService");
 const Materia = require("../models/materiaModel");
 
 
@@ -144,7 +144,7 @@ const createAlumno = async (req, res, next) => {
         await nuevoAlumno.save();
 
         // Sincronizar en colecciones Materia y Profesor
-        await agregarAlumnoEnMaterias(nuevoAlumno);
+        await agregarAlumnoEnCursos(nuevoAlumno);
         await agregarAlumnoEnProfesores(nuevoAlumno);
 
         res.status(201).json({

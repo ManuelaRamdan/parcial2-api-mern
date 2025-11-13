@@ -1,6 +1,6 @@
 const Alumno = require("../models/alumnoModel");
 const Profesor = require("../models/profesorModel");
-const Materia = require("../models/materiaModel");
+const Curso = require("../models/cursoModel");
 const Usuario = require("../models/usuarioModel");
 const _ = require("lodash");
 
@@ -33,43 +33,48 @@ const actualizarAlumno = async (id, actualizarDatos) => {
     if (actualizarDatos.activo !== undefined) alumno.activo = actualizarDatos.activo;
 
     if (Array.isArray(actualizarDatos.materias)) {
-        const materiasDB = await Materia.find({
-            $or: actualizarDatos.materias.map(m => ({ nombre: m.nombre, curso: m.curso }))
+        const cursosDB = await Curso.find({
+            _id: { $in: actualizarDatos.materias.map(m => m.idCurso) }
         });
 
-        const materiaInvalida = actualizarDatos.materias.find(
-            m => !materiasDB.some(dbM => dbM.nombre === m.nombre && dbM.curso === m.curso)
+        const cursoInvalido = actualizarDatos.materias.find(
+            m => !cursosDB.some(dbC => dbC._id.toString() === m.idCurso)
         );
-        if (materiaInvalida) {
-            const error = new Error(`La materia ${materiaInvalida.nombre} curso ${materiaInvalida.curso} no existe`);
+        if (cursoInvalido) {
+            const error = new Error(`El curso con ID ${cursoInvalido.idCurso} no existe`);
             error.statusCode = 404;
             throw error;
         }
 
         const noInscripto = actualizarDatos.materias.find(
-            m => !alumno.materias.some(am => am.nombre === m.nombre && am.curso === m.curso)
+            m => !alumno.materias.some(am => am.idCurso.toString() === m.idCurso)
         );
         if (noInscripto) {
-            const error = new Error(`El alumno no está inscripto en la materia ${noInscripto.nombre} curso ${noInscripto.curso}`);
+            const error = new Error(
+                `El alumno no está inscripto en el curso con ID ${noInscripto.idCurso}`
+            );
             error.statusCode = 422;
             throw error;
         }
 
         alumno.materias = alumno.materias.map(materia => {
-            const materiaUpdate = actualizarDatos.materias.find(mu =>
-                mu.nombre === materia.nombre && mu.curso === materia.curso
+            const materiaUpdate = actualizarDatos.materias.find(
+                mu => mu.idCurso.toString() === materia.idCurso.toString()
             );
-
 
             return materiaUpdate
                 ? {
                     ...materia,
                     notas: actualizarNotas(materia.notas ?? [], materiaUpdate.notas ?? []),
-                    asistencias: actualizarAsistencias(materia.asistencias ?? [], materiaUpdate.asistencias ?? []),
+                    asistencias: actualizarAsistencias(
+                        materia.asistencias ?? [],
+                        materiaUpdate.asistencias ?? []
+                    ),
                 }
                 : materia;
         });
     }
+
 
     await alumno.save();
 
@@ -136,12 +141,12 @@ const sincronizarAlumnoConColecciones = async (alumno, dniViejo) => {
 
     await actualizarDniEnUsuarios(dniViejo, alumno);
     await actualizarProfesores(alumno, dniViejo);
-    await actualizarAlumnoEnMaterias(dniViejo, alumno);
+    await actualizarAlumnoEnCursos(dniViejo, alumno);
 
 };
 
-const actualizarAlumnoEnMaterias = async (dniViejo, alumno) => {
-    await Materia.updateMany(
+const actualizarAlumnoEnCursos = async (dniViejo, alumno) => {
+    await Curso.updateMany(
         { "alumnos.dni": dniViejo },
         {
             $set: {
@@ -188,19 +193,18 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
     const { nombre, dni, activo } = alumno;
     let huboCambios = false;
 
-    const materiasNuevas = prof.materiasDictadas.map(materiaDictada => {
+    const materiasActualizadas = prof.materiasDictadas.map(materiaDictada => {
         const materiaAlumno = alumno.materias.find(
-            m => m.nombre === materiaDictada.nombre && m.curso === materiaDictada.curso
+            m => m.idCurso?.toString() === materiaDictada.idCurso?.toString()
         );
 
         let nuevosAlumnos = materiaDictada.alumnos;
 
         if (materiaAlumno) {
             nuevosAlumnos = materiaDictada.alumnos.map(alumnoSub => {
-
                 if (alumnoSub.dni === dniViejo) {
-                    let nuevasNotas = actualizarNotas(alumnoSub.notas, materiaAlumno.notas);
-                    let nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias, materiaAlumno.asistencias);
+                    const nuevasNotas = actualizarNotas(alumnoSub.notas ?? [], materiaAlumno.notas ?? []);
+                    const nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias ?? [], materiaAlumno.asistencias ?? []);
 
                     const cambio =
                         alumnoSub.nombre !== nombre ||
@@ -229,65 +233,73 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
     });
 
     if (huboCambios) {
-        prof.materiasDictadas = materiasNuevas;
+        prof.materiasDictadas = materiasActualizadas;
         await prof.save();
     }
 };
 
 
 
-const agregarAlumnoEnMaterias = async (alumno) => {
+
+const agregarAlumnoEnCursos = async (alumno) => {
     if (alumno && Array.isArray(alumno.materias)) {
         await Promise.all(
             alumno.materias.map(async (materiaAlumno) => {
-                const result = await Materia.updateOne(
-                    { nombre: materiaAlumno.nombre, curso: materiaAlumno.curso },
+                await Curso.updateOne(
+                    { _id: materiaAlumno.idCurso }, // ahora busca por el id del curso
                     {
                         $addToSet: {
                             alumnos: {
                                 nombre: alumno.nombre,
                                 dni: alumno.dni,
                                 activo: alumno.activo ?? true,
-                            }
-                        }
+                                notas: materiaAlumno.notas ?? [],
+                                asistencias: materiaAlumno.asistencias ?? [],
+                            },
+                        },
                     }
                 );
             })
         );
     }
-
 };
+
 
 const agregarAlumnoEnProfesores = async (alumno) => {
     if (alumno && Array.isArray(alumno.materias)) {
-        const materiasAlumno = alumno.materias.map(m => m.nombre);
+        const idsCursosAlumno = alumno.materias.map(m => m.idCurso);
 
         const profesores = await Profesor.find({
-            "materiasDictadas.nombre": { $in: materiasAlumno },
+            "materiasDictadas.idCurso": { $in: idsCursosAlumno }
         });
 
         await Promise.all(
-            profesores.map(async prof => {
+            profesores.map(async (prof) => {
                 let huboCambios = false;
 
                 const nuevasMaterias = prof.materiasDictadas.map(materiaDictada => {
+                    // Buscar la materia del alumno que coincide con la materia del profesor
                     const materiaAlumno = alumno.materias.find(
-                        m => m.nombre === materiaDictada.nombre && m.curso === materiaDictada.curso
+                        m => String(m.idCurso) === String(materiaDictada.idCurso)
                     );
 
-                    if (!materiaAlumno) return materiaDictada;
+                    const yaExiste = materiaDictada.alumnos.some(a => a.dni === alumno.dni);
 
-                    const nuevosAlumnos = materiaDictada.alumnos.some(a => a.dni === alumno.dni)
+                    // Si no hay materiaAlumno, no se agregan notas ni asistencias
+                    const nuevosAlumnos = yaExiste
                         ? materiaDictada.alumnos
-                        : [...materiaDictada.alumnos, {
-                            nombre: alumno.nombre,
-                            dni: alumno.dni,
-                            activo: alumno.activo ?? true,
-                            notas: [],
-                            asistencias: []
-                        }];
+                        : [
+                            ...materiaDictada.alumnos,
+                            {
+                                nombre: alumno.nombre,
+                                dni: alumno.dni,
+                                activo: alumno.activo ?? true,
+                                notas: materiaAlumno?.notas ?? [],
+                                asistencias: materiaAlumno?.asistencias ?? [],
+                            },
+                        ];
 
-                    if (nuevosAlumnos.length !== materiaDictada.alumnos.length) huboCambios = true;
+                    if (!yaExiste) huboCambios = true;
 
                     return { ...materiaDictada, alumnos: nuevosAlumnos };
                 });
@@ -299,10 +311,9 @@ const agregarAlumnoEnProfesores = async (alumno) => {
             })
         );
     }
-
-
 };
 
 
-module.exports = { actualizarAlumno, agregarAlumnoEnMaterias, agregarAlumnoEnProfesores };
+
+module.exports = { actualizarAlumno, agregarAlumnoEnCursos, agregarAlumnoEnProfesores };
 
