@@ -3,7 +3,11 @@
     "nombre": "Alumno 2",
     "materias": [
       {
-        "nombre": "Matemática",
+        "nombreMateria": "Matemática",
+        "division": "A",
+        "nivel": 1,
+        "anio": 2025,
+        "idCurso": { "$oid": "6914ff79d4e19c15fae59b49" },
         "profesor": { "nombre": "Profe 1" },
         "notas": [
           { "tipo": "Parcial 1", "nota": { "$numberInt": "9" } },
@@ -17,12 +21,15 @@
           { "fecha": { "$date": { "$numberLong": "1756771200000" } }, "presente": false },
           { "fecha": { "$date": { "$numberLong": "1756857600000" } }, "presente": true },
           { "fecha": { "$date": { "$numberLong": "1756944000000" } }, "presente": true }
-        ],
-        "curso": "1A"
+        ]
       },
       {
         "profesor": { "nombre": "Profe 3" },
-        "nombre": "Lengua",
+        "nombreMateria": "Lengua",
+        "division": "A",
+        "nivel": 1,
+        "anio": 2025,
+        "idCurso": { "$oid": "6914ff79d4e19c15fae59b49" },
         "notas": [
           { "_id": { "$oid": "68f11ddec0cc4c07e1a4a563" }, "tipo": "Parcial 1", "nota": { "$numberInt": "6" } },
           { "_id": { "$oid": "68f11ddec0cc4c07e1a4a564" }, "tipo": "Parcial 2", "nota": { "$numberInt": "7" } },
@@ -34,8 +41,7 @@
           { "_id": { "$oid": "68f11ddec0cc4c07e1a4a568" }, "fecha": { "$date": { "$numberLong": "1756771200000" } }, "presente": true },
           { "_id": { "$oid": "68f11ddec0cc4c07e1a4a569" }, "fecha": { "$date": { "$numberLong": "1756857600000" } }, "presente": true },
           { "_id": { "$oid": "68f11ddec0cc4c07e1a4a56a" }, "fecha": { "$date": { "$numberLong": "1756944000000" } }, "presente": true }
-        ],
-        "curso": "1A"
+        ]
       }
     ],
     "dni": "22",
@@ -47,7 +53,11 @@
     "materias": [
       {
         "profesor": { "nombre": "Profe 2" },
-        "nombre": "Historia",
+        "nombreMateria": "Historia",
+        "division": "B",
+        "nivel": 1,
+        "anio": 2025,
+        "idCurso": { "$oid": "6914ff79d4e19c15fae59b4b" },
         "notas": [
           { "tipo": "Parcial 1", "nota": { "$numberInt": "8" } },
           { "tipo": "Parcial 2", "nota": { "$numberInt": "3" } },
@@ -60,11 +70,14 @@
           { "fecha": { "$date": { "$numberLong": "1756857600000" } }, "presente": true },
           { "fecha": { "$date": { "$numberLong": "1756944000000" } }, "presente": true },
           { "fecha": { "$date": { "$numberLong": "1757030400000" } }, "presente": true }
-        ],
-        "curso": "1B"
+        ]
       },
       {
-        "nombre": "Geografía",
+        "nombreMateria": "Geografía",
+        "division": "B",
+        "nivel": 1,
+        "anio": 2025,
+        "idCurso": { "$oid": "6914ff79d4e19c15fae59b4a" },
         "profesor": { "nombre": "Profe 2" },
         "notas": [
           { "tipo": "Parcial 1", "nota": { "$numberInt": "1" } },
@@ -79,8 +92,7 @@
           { "fecha": { "$date": { "$numberLong": "1756944000000" } }, "presente": true },
           { "fecha": { "$date": { "$numberLong": "1756720800000" } }, "presente": false },
           { "fecha": { "$date": { "$numberLong": "1756810800000" } }, "presente": false }
-        ],
-        "curso": "1B"
+        ]
       }
     ],
     "dni": "3",
@@ -92,7 +104,11 @@
     "materias": [
       {
         "profesor": { "nombre": "Profe 1" },
-        "nombre": "Matemática",
+        "nombreMateria": "Matemática",
+        "division": "A",
+        "nivel": 1,
+        "anio": 2025,
+        "idCurso": { "$oid": "6914ff79d4e19c15fae59b48" },
         "notas": [
           { "tipo": "Parcial 1", "nota": { "$numberInt": "8" } },
           { "tipo": "Parcial 2", "nota": { "$numberInt": "7" } },
@@ -105,12 +121,14 @@
           { "fecha": { "$date": { "$numberLong": "1756771200000" } }, "presente": true },
           { "fecha": { "$date": { "$numberLong": "1756857600000" } }, "presente": false },
           { "fecha": { "$date": { "$numberLong": "1756944000000" } }, "presente": true }
-        ],
-        "curso": "1A"
+        ]
       },
       {
-        "nombre": "Lengua",
-        "curso": "1A",
+        "nombreMateria": "Lengua",
+        "division": "A",
+        "nivel": 1,
+        "anio": 2025,
+        "idCurso": { "$oid": "6914ff79d4e19c15fae59b49" },
         "profesor": { "nombre": "Profe 3" },
         "notas": [
           { "tipo": "Parcial 1", "nota": { "$numberInt": "10" } },
@@ -124,11 +142,10 @@
           { "fecha": { "$date": { "$numberLong": "1736074800000" } }, "presente": false },
           { "fecha": { "$date": { "$numberLong": "1737370800000" } }, "presente": true },
           { "fecha": { "$date": { "$numberLong": "1735815600000" } }, "presente": false }
-        ],
+        ]
       }
     ],
     "dni": "456123",
-    "__v": { "$numberInt": "18" },
     "activo": true
   }
 ]

@@ -10,12 +10,7 @@
         },
         "alumnos": [
             { "nombre": "juan", "dni": "456123", "activo": true },
-            { "nombre": "Alumno 2", "dni": "22", "activo": true },
-            { "nombre": "Alumno 4", "dni": "6", "activo": true },
-            { "nombre": "prueba", "dni": "2222", "activo": true },
-            { "nombre": "prueba", "dni": "123", "activo": true },
-            { "nombre": "prueba", "dni": "22234", "activo": true },
-            { "nombre": "prueba", "dni": "2223455", "activo": true }
+            { "nombre": "Alumno 2", "dni": "22", "activo": true }
         ]
     },
     {
@@ -29,8 +24,7 @@
         },
         "alumnos": [
             { "nombre": "juan", "dni": "456123", "activo": true },
-            { "nombre": "Alumno 2", "dni": "22", "activo": true },
-            { "nombre": "Alumno 4", "dni": "6", "activo": true }
+            { "nombre": "Alumno 2", "dni": "22", "activo": true }
         ]
     },
     {

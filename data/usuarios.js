@@ -52,7 +52,7 @@
     "rol": "padre",
     "profesorId": null,
     "hijos": [
-      { "dni": "123", "activo": true }
+      { "dni": "3", "activo": true }
     ],
     "__v": { "$numberInt": "0" }
   },

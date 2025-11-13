@@ -9,17 +9,28 @@ const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
 
 const filtrarAlumnosActivos = (profesor) => {
-  const profObj = profesor && profesor.toObject ? profesor.toObject() : (profesor || {});
+  const profObj = profesor?.toObject ? profesor.toObject() : (profesor || {});
 
-  const materias = Array.isArray(profObj.materiasDictadas) ? profObj.materiasDictadas : [];
+  // 🔹 Asegurarse de que materiasDictadas sea un array
+  const materias = Array.isArray(profObj.materiasDictadas)
+    ? profObj.materiasDictadas
+    : [];
 
   const materiasFiltradas = materias.map(materia => {
-    const matObj = materia && materia.toObject ? materia.toObject() : (materia || {});
-    const alumnos = Array.isArray(matObj.alumnos) ? matObj.alumnos : [];
+    const materiaObj = materia?.toObject ? materia.toObject() : (materia || {});
+    const alumnos = Array.isArray(materiaObj.alumnos) ? materiaObj.alumnos : [];
+
+    const alumnosActivos = alumnos
+      .filter(a => a && a.activo === true)
+      .map(a => ({
+        ...a,
+        asistencias: Array.isArray(a.asistencias) ? a.asistencias : [],
+        notas: Array.isArray(a.notas) ? a.notas : []
+      }));
 
     return {
-      ...matObj,
-      alumnos: alumnos.filter(alumno => alumno && alumno.activo === true)
+      ...materiaObj,
+      alumnos: alumnosActivos
     };
   });
 
@@ -28,6 +39,8 @@ const filtrarAlumnosActivos = (profesor) => {
     materiasDictadas: materiasFiltradas
   };
 };
+
+
 
 
 const getAllProfesores = async (req, res, next) => {
