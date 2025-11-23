@@ -159,6 +159,33 @@ const actualizarNotasAsistenciasDelAlumno = async (req, res, next) => {
   }
 };
 
+const profeGetMiInfo = async (req, res, next) => {
+  try {
+    const profesorId = req.user.profesorId;
+
+    if (!profesorId) {
+      const error = new Error("El usuario no tiene un profesor asignado");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const profesor = await Profesor.findById(profesorId);
+
+    if (!profesor) {
+      const error = new Error("Profesor no encontrado");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const filtrado = filtrarAlumnosActivos(profesor);
+    res.json(filtrado);
+
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 
 
 
@@ -166,5 +193,6 @@ const actualizarNotasAsistenciasDelAlumno = async (req, res, next) => {
 module.exports = {
   getAllProfesores,
   getProfesorById,
-  actualizarNotasAsistenciasDelAlumno
+  actualizarNotasAsistenciasDelAlumno,
+  profeGetMiInfo
 };

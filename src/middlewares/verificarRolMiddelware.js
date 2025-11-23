@@ -28,4 +28,5 @@ const isProfe = (req, res, next) => {
     next();
 };
 
+
 module.exports = { isAdmin, isPadre, isProfe };
