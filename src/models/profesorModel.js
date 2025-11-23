@@ -4,8 +4,11 @@ const profesorSchema = new mongoose.Schema({
     nombre: { type: String, required: true },
     materiasDictadas: [
         {
-            nombre: { type: String, required: true },
-            curso: { type: String, required: true },
+            idCurso: { type: mongoose.Schema.Types.ObjectId, ref: "Curso", required: true },
+            nombreMateria: { type: String, required: true },
+            division: { type: String, required: true },
+            nivel: { type: Number, required: true },
+            anio: { type: Number, required: true },
             alumnos: [
                 {
                     nombre: { type: String, required: true },

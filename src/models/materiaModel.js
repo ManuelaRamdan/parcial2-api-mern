@@ -2,20 +2,20 @@
 const mongoose = require("mongoose");
 
 
+
 const materiaShema = new mongoose.Schema({
     nombre: { type: String, required: true },
-    curso: { type: String, required: true},
-    profesor: {
-        _id: { type: mongoose.Schema.Types.ObjectId, ref: "Profesor", required: true },
-        nombre: { type: String, required: true }
-    },
-    alumnos: [
-        {
-            nombre: { type: String, required: true },
-            dni: { type: String, required: true },
-            activo: { type: Boolean, default: true } 
-        }]
+    cargaHoraria: { type: Number, required: true },
+    contenido: { type: String, required: true },
+    nivel: { type: Number, required: true },
+    curso: {
+        id: { type: mongoose.Schema.Types.ObjectId, ref: "Curso", required: true },
+        division: { type: String, required: true },
+        anio: { type: Number, required: true }
+    }
 });
+
+
 
 const Materia = mongoose.model("Materia", materiaShema);
 

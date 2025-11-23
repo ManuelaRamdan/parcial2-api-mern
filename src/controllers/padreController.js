@@ -45,4 +45,4 @@ const getAllHijosByID = async (req, res, next) => {
 };
 
 
-module.exports = { getAllHijos, getAllHijosByID };
+module.exports = { getAllHijos, getAllHijosByID, obtenerHijosActivosPorPadre };

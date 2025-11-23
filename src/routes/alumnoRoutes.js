@@ -13,6 +13,7 @@ router.put("/:id", [authenticateToken, isAdmin], alumnoController.updateAlumno);
 router.put("/:id", [authenticateToken, isAdmin], alumnoController.updateAlumno);
 
 router.get("/:id", [authenticateToken],alumnoController.getAlumnoById);
+router.get("/dni/:dni", [authenticateToken, isAdmin],alumnoController.getAlumnoByDni);
 
 router.delete("/:id", [authenticateToken, isAdmin], alumnoController.deleteAlumno);
 

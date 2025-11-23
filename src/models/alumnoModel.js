@@ -1,31 +1,34 @@
 const mongoose = require("mongoose");
 
 const alumnoSchema = new mongoose.Schema({
-  nombre: { type: String, required: true },
-    materias: [
+  nombre: { type: String },
+  materias: [
     {
-      nombre: { type: String, required: true },
-      curso: { type: String, required: true },
+      idCurso: { type: mongoose.Schema.Types.ObjectId, ref: "Curso" },
+      nombreMateria: { type: String },
+      division: { type: String},
+      nivel: { type: Number },
+      anio: { type: Number },
       profesor: {
-        nombre: { type: String, required: true }
+        nombre: { type: String }
       },
       notas: [
         {
-          tipo: { type: String, required: true }, 
-          nota: { type: Number, required: true }
+          tipo: { type: String },
+          nota: { type: Number }
         }
       ],
       asistencias: [
         {
-          fecha: { type: Date, required: true },
-          presente: { type: Boolean, required: true }
+          fecha: { type: Date },
+          presente: { type: Boolean }
         }
       ],
-      
+
     }
   ],
-  dni:{ type: String, required: true},
-  activo: { type: Boolean, default: true } 
+  dni: { type: String },
+  activo: { type: Boolean, default: true }
 });
 
 const Alumno = mongoose.model("Alumno", alumnoSchema);
