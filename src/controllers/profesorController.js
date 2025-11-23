@@ -1,6 +1,6 @@
 
 const Profesor = require("../models/profesorModel");
-
+const Alumno = require("../models/alumnoModel");
 const paginate = require("../utils/paginar");
 
 const { actualizarAlumno } = require("../service/alumnoService");
@@ -11,7 +11,6 @@ const ObjectId = mongoose.Types.ObjectId;
 const filtrarAlumnosActivos = (profesor) => {
   const profObj = profesor?.toObject ? profesor.toObject() : (profesor || {});
 
-  // 🔹 Asegurarse de que materiasDictadas sea un array
   const materias = Array.isArray(profObj.materiasDictadas)
     ? profObj.materiasDictadas
     : [];
@@ -79,9 +78,26 @@ const getProfesorById = async (req, res, next) => {
 
 const actualizarNotasAsistenciasDelAlumno = async (req, res, next) => {
   try {
-    const alumnoId = req.params.id;
+    const dni = req.params.dni;
     const { materias } = req.body;
     const profesorId = req.user.profesorId;
+
+    if (!dni) {
+      const error = new Error("Debe enviar el DNI del alumno");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Buscar alumno por dni
+    const alumno = await Alumno.findOne({ dni });
+
+    if (!alumno) {
+      const error = new Error("No se encontró un alumno con ese DNI");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const alumnoId = alumno._id.toString();
 
     if (!Array.isArray(materias) || materias.length === 0) {
       const error = new Error("Debe enviarse un arreglo de materias para actualizar");
