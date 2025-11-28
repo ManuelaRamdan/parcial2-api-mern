@@ -84,58 +84,51 @@ const actualizarAlumno = async (id, actualizarDatos) => {
 };
 
 
-const actualizarNotas = (notasAlumno = [], notasActualizadas = []) => {
-    if (Array.isArray(notasActualizadas)) {
-        notasAlumno = notasActualizadas.reduce((acc, notaUpdate) => {
-            if (typeof notaUpdate.tipo !== "string" || typeof notaUpdate.nota !== "number") {
-                const error = new Error("Cada nota debe tener 'tipo' (string) y 'nota' (number)");
-                error.statusCode = 422;
-                throw error;
-            }
+const actualizarNotas = (notasActuales, notasNuevas) => {
+    if (!Array.isArray(notasNuevas)) return notasActuales;
 
-            if (notaUpdate.nota <= 0 || notaUpdate.nota > 10) {
-                const error = new Error("Cada nota debe ser mayor que 0 y menor o igual a 10");
-                error.statusCode = 422;
-                throw error;
-            }
+    // Validación mínima sin loops:
+    const esValido =
+        notasNuevas.length === 0 ||                      // permitir lista vacía
+        JSON.stringify(notasNuevas).match(/"tipo":|"nota":/) !== null;
 
-            const existe = acc.some(n => n.tipo === notaUpdate.tipo);
-            return existe
-                ? acc.map(n => (n.tipo === notaUpdate.tipo ? { ...n, nota: notaUpdate.nota } : n))
-                : [...acc, { tipo: notaUpdate.tipo, nota: notaUpdate.nota }];
-        }, [...notasAlumno]);
+    if (!esValido) {
+        const error = new Error("Formato inválido en notas");
+        error.statusCode = 422;
+        throw error;
     }
-    return notasAlumno;
 
-
+    // ✔ REEMPLAZO TOTAL (permite borrar, agregar, modificar)
+    return notasNuevas;
 };
 
-const actualizarAsistencias = (asistenciasAlumno = [], asistenciasActualizadas = []) => {
-    if (Array.isArray(asistenciasActualizadas)) {
-        asistenciasAlumno = asistenciasActualizadas.reduce((acc, asisUpdate) => {
-            const fechaUpdate = new Date(asisUpdate.fecha);
-            if (isNaN(fechaUpdate)) {
-                const error = new Error(`Fecha inválida en asistencia: "${asisUpdate.fecha}"`);
-                error.statusCode = 422;
-                throw error;
-            }
 
-            const fechaISO = fechaUpdate.toISOString().slice(0, 10);
-            const existe = acc.some(a => new Date(a.fecha).toISOString().slice(0, 10) === fechaISO);
+const actualizarAsistencias = (asisActuales, asisNuevas) => {
+    if (!Array.isArray(asisNuevas)) return asisActuales;
 
-            return existe
-                ? acc.map(a =>
-                    new Date(a.fecha).toISOString().slice(0, 10) === fechaISO
-                        ? { ...a, fecha: fechaUpdate, presente: asisUpdate.presente }
-                        : a
-                )
-                : [...acc, { fecha: fechaUpdate, presente: asisUpdate.presente }];
-        }, [...asistenciasAlumno]);
+    // Validación mínima sin loops:
+    const esValido =
+        asisNuevas.length === 0 ||
+        JSON.stringify(asisNuevas).match(/"fecha":|"presente":/) !== null;
+
+    if (!esValido) {
+        const error = new Error("Formato inválido en asistencias");
+        error.statusCode = 422;
+        throw error;
     }
-    return asistenciasAlumno;
 
+    // ✔ Convertir fechas SIN loops
+    const stringData = JSON.stringify(asisNuevas);
+    const reemplazado = stringData.replace(
+        /"fecha"\s*:\s*"([^"]+)"/g,
+        (_, fecha) => `"fecha":"${new Date(fecha).toISOString()}"`
+    );
+    const asistenciasFinal = JSON.parse(reemplazado);
 
+    // ✔ REEMPLAZO TOTAL
+    return asistenciasFinal;
 };
+
 
 const sincronizarAlumnoConColecciones = async (alumno, dniViejo) => {
 
