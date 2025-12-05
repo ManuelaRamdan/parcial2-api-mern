@@ -84,14 +84,14 @@ const createAlumno = async (req, res, next) => {
                 !m.profesor.nombre ||
                 (
                     !m.idCurso &&
-                    (!m.nombreMateria || !m.division || !m.nivel || !m.anio)
+                    (!m.nombreCurso || !m.division || !m.nivel || !m.anio)
                 )
             );
         });
 
         if (materiaInvalida) {
             const error = new Error(
-                "Cada materia debe incluir profesor (con _id y nombre) y al menos idCurso o los campos nombreMateria, division, nivel y anio."
+                "Cada materia debe incluir profesor (con _id y nombre) y al menos idCurso o los campos nombreCurso, division, nivel y anio."
             );
             error.statusCode = 400;
             throw error;
@@ -101,7 +101,7 @@ const createAlumno = async (req, res, next) => {
             return m.idCurso
                 ? { _id: m.idCurso }
                 : {
-                    nombreMateria: m.nombreMateria,
+                    nombreCurso: m.nombreCurso,
                     division: m.division,
                     nivel: m.nivel,
                     anio: m.anio,
@@ -117,7 +117,7 @@ const createAlumno = async (req, res, next) => {
                     m.idCurso
                         ? db._id.toString() === m.idCurso
                         : (
-                            db.nombreMateria === m.nombreMateria &&
+                            db.nombreCurso === m.nombreCurso &&
                             db.division === m.division &&
                             db.nivel === m.nivel &&
                             db.anio === m.anio &&
@@ -130,7 +130,7 @@ const createAlumno = async (req, res, next) => {
                 .map(f =>
                     f.idCurso
                         ? `ID ${f.idCurso}`
-                        : `${f.nombreMateria} (${f.division}, nivel ${f.nivel}, año ${f.anio}) - Profesor ${f.profesor.nombre}`
+                        : `${f.nombreCurso} (${f.division}, nivel ${f.nivel}, año ${f.anio}) - Profesor ${f.profesor.nombre}`
                 )
                 .join(", ");
 
@@ -144,7 +144,7 @@ const createAlumno = async (req, res, next) => {
         const materiasAlumno = materiasEnBD.map(dbMat => {
             return {
                 idCurso: dbMat._id,
-                nombreMateria: dbMat.nombreMateria,
+                nombreCurso: dbMat.nombreCurso,
                 division: dbMat.division,
                 nivel: dbMat.nivel,
                 anio: dbMat.anio,

@@ -5,7 +5,7 @@ const alumnoSchema = new mongoose.Schema({
   materias: [
     {
       idCurso: { type: mongoose.Schema.Types.ObjectId, ref: "Curso" },
-      nombreMateria: { type: String },
+      nombreCurso: { type: String },
       division: { type: String},
       nivel: { type: Number },
       anio: { type: Number },
@@ -21,7 +21,7 @@ const alumnoSchema = new mongoose.Schema({
       asistencias: [
         {
           fecha: { type: Date },
-          presente: { type: Boolean }
+          presente: { type: String }
         }
       ],
 

@@ -23,7 +23,7 @@ const profesorSchema = new mongoose.Schema({
                     asistencias: [
                         {
                             fecha: { type: Date, required: true },
-                            presente: { type: Boolean, required: true }
+                            presente: { type: String, required: true }
                         }
                     ]
                 }
