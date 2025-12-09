@@ -79,10 +79,21 @@ const createUsuario = async (req, res, next) => {
             );
 
             const dnis = hijosFormateados.map(h => h.dni);
+
+            // Verificar que los alumnos existan
             const alumnosExistentes = await Alumno.find({ dni: { $in: dnis } });
 
             if (alumnosExistentes.length !== dnis.length) {
                 const error = new Error("Algún DNI asignado no corresponde a un alumno existente");
+                error.statusCode = 400;
+                throw error;
+            }
+
+            // Verificar que los alumnos no estén asignados a otro usuario
+            const usuariosConEsosHijos = await Usuario.find({ "hijos.dni": { $in: dnis } });
+
+            if (usuariosConEsosHijos.length > 0) {
+                const error = new Error("Alguno de los alumnos ya está asignado a otro usuario padre");
                 error.statusCode = 400;
                 throw error;
             }
