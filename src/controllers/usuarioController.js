@@ -80,7 +80,7 @@ const createUsuario = async (req, res, next) => {
 
             const dnis = hijosFormateados.map(h => h.dni);
             const alumnosExistentes = await Alumno.find({ dni: { $in: dnis } });
-            
+
             if (alumnosExistentes.length !== dnis.length) {
                 const error = new Error("Algún DNI asignado no corresponde a un alumno existente");
                 error.statusCode = 400;
@@ -98,6 +98,13 @@ const createUsuario = async (req, res, next) => {
             const profesorExistente = await Profesor.findById(profesorId);
             if (!profesorExistente) {
                 const error = new Error("El profesor indicado no existe");
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const usuarioConEseProfesor = await Usuario.findOne({ profesorId });
+            if (usuarioConEseProfesor) {
+                const error = new Error("Ese profesor ya está asignado a otro usuario");
                 error.statusCode = 400;
                 throw error;
             }
