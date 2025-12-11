@@ -9,7 +9,7 @@ const paginate = require("../utils/paginar");
 const getAllAlumnos = async (req, res, next) => {
     try {
         const result = await paginate(Alumno, req, {
-            filter: { activo: true },
+            query: { activo: true },
             sort: { nombre: 1 }
         });
 
