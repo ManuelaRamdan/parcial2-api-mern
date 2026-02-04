@@ -22,7 +22,9 @@ const filtrarHijosActivos = (usuarioDoc) => {
 
 const getAllUsuarios = async (req, res, next) => {
     try {
-        const result = await paginate(Usuario, req, { select: "-password" });
+        const { rol } = req.query;
+        const filtro = rol ? { rol: rol } : {};
+        const result = await paginate(Usuario, req, { query: filtro,select: "-password" });
 
         const usuariosProcesados = result.data.map(filtrarHijosActivos);
 
@@ -199,6 +201,6 @@ module.exports = {
     getAllUsuarios,
     getUsuarioById,
     createUsuario,
-    loginUsuario
+    loginUsuario,getAllPadre
 };
 

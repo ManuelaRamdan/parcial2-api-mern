@@ -1,6 +1,5 @@
-
-
-const paginate = async (Model, req, { query = {}, sort = { _id: 1 } } = {}) => {
+// Add 'select' to the destructuring
+const paginate = async (Model, req, { query = {}, sort = { _id: 1 }, select = null } = {}) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
 
@@ -19,7 +18,9 @@ const paginate = async (Model, req, { query = {}, sort = { _id: 1 } } = {}) => {
         throw error;
     }
 
+    // Apply .select(select) here
     const data = await Model.find(query)
+        .select(select)
         .skip((page - 1) * limit)
         .limit(limit)
         .sort(sort);
