@@ -201,6 +201,6 @@ module.exports = {
     getAllUsuarios,
     getUsuarioById,
     createUsuario,
-    loginUsuario,getAllPadre
+    loginUsuario
 };
 

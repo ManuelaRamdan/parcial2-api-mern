@@ -12,7 +12,7 @@ const filtrarAlumnosActivos = (curso) => ({
 
 const getAllCursos = async (req, res, next) => {
     try {
-        const result = await paginate(Curso, req, { sort: { nombre: 1 } });
+        const result = await paginate(Curso, req, { sort: { nombreMateria: 1 } });
 
         const cursosFiltradas = result.data.map(filtrarAlumnosActivos);
 
