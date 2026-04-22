@@ -75,6 +75,25 @@ const getProfesorById = async (req, res, next) => {
   }
 };
 
+const getProfesorByIdCurso = async (req, res, next) => {
+  try {
+    const profesor = await Profesor.findOne({ "materiasDictadas.idCurso": req.params.id });
+
+    if (!profesor) {
+      const error = new Error("Profesor no encontrado");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const profesorFiltrado = filtrarAlumnosActivos(profesor);
+
+    res.json(profesorFiltrado);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 
 const actualizarNotasAsistenciasDelAlumno = async (req, res, next) => {
   try {
@@ -210,5 +229,5 @@ module.exports = {
   getAllProfesores,
   getProfesorById,
   actualizarNotasAsistenciasDelAlumno,
-  profeGetMiInfo
+  profeGetMiInfo, getProfesorByIdCurso
 };
