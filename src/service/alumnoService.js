@@ -186,41 +186,58 @@ const procesarProfesor = async (prof, alumno, dniViejo) => {
     const { nombre, dni, activo } = alumno;
     let huboCambios = false;
 
+    const idsCursosActivos = new Set(
+        (alumno.materias ?? []).map(m => m.idCurso?.toString())
+    );
+
     const materiasActualizadas = prof.materiasDictadas.map(materiaDictada => {
-        const materiaAlumno = alumno.materias.find(
-            m => m.idCurso?.toString() === materiaDictada.idCurso?.toString()
+        const cursoId = materiaDictada.idCurso?.toString();
+        const materiaAlumno = alumno.materias?.find(
+            m => m.idCurso?.toString() === cursoId
         );
 
-        let nuevosAlumnos = materiaDictada.alumnos;
-
-        if (materiaAlumno) {
-            nuevosAlumnos = materiaDictada.alumnos.map(alumnoSub => {
-                if (alumnoSub.dni === dniViejo) {
-                    const nuevasNotas = actualizarNotas(alumnoSub.notas ?? [], materiaAlumno.notas ?? []);
-                    const nuevasAsistencias = actualizarAsistencias(alumnoSub.asistencias ?? [], materiaAlumno.asistencias ?? []);
-
-                    const cambio =
-                        alumnoSub.nombre !== nombre ||
-                        alumnoSub.dni !== dni ||
-                        alumnoSub.activo !== activo ||
-                        !_.isEqual(alumnoSub.notas, nuevasNotas) ||
-                        !_.isEqual(alumnoSub.asistencias, nuevasAsistencias);
-
-                    if (cambio) huboCambios = true;
-
-                    return {
-                        ...alumnoSub,
-                        nombre,
-                        dni,
-                        activo,
-                        notas: nuevasNotas,
-                        asistencias: nuevasAsistencias,
-                    };
-                }
-
-                return alumnoSub;
-            });
+        if (!idsCursosActivos.has(cursoId)) {
+            const estaEnLista = materiaDictada.alumnos.some(a => a.dni === dniViejo);
+            if (estaEnLista) {
+                huboCambios = true;
+                return {
+                    ...materiaDictada,
+                    alumnos: materiaDictada.alumnos.filter(a => a.dni !== dniViejo),
+                };
+            }
+            return materiaDictada;
         }
+
+        const nuevosAlumnos = materiaDictada.alumnos.map(alumnoSub => {
+            if (alumnoSub.dni !== dniViejo) return alumnoSub;
+
+            const nuevasNotas = actualizarNotas(
+                alumnoSub.notas ?? [],
+                materiaAlumno?.notas ?? []
+            );
+            const nuevasAsistencias = actualizarAsistencias(
+                alumnoSub.asistencias ?? [],
+                materiaAlumno?.asistencias ?? []
+            );
+
+            const cambio =
+                alumnoSub.nombre !== nombre ||
+                alumnoSub.dni !== dni ||
+                alumnoSub.activo !== activo ||
+                !_.isEqual(alumnoSub.notas, nuevasNotas) ||
+                !_.isEqual(alumnoSub.asistencias, nuevasAsistencias);
+
+            if (cambio) huboCambios = true;
+
+            return {
+                ...alumnoSub,
+                nombre,
+                dni,
+                activo,
+                notas: nuevasNotas,
+                asistencias: nuevasAsistencias,
+            };
+        });
 
         return { ...materiaDictada, alumnos: nuevosAlumnos };
     });
