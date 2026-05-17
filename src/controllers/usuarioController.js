@@ -24,7 +24,7 @@ const getAllUsuarios = async (req, res, next) => {
     try {
         const { rol } = req.query;
         const filtro = rol ? { rol: rol } : {};
-        const result = await paginate(Usuario, req, { query: filtro,select: "-password" });
+        const result = await paginate(Usuario, req, { query: filtro, select: "-password" });
 
         const usuariosProcesados = result.data.map(filtrarHijosActivos);
 
@@ -74,30 +74,39 @@ const createUsuario = async (req, res, next) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
         let hijosFormateados = [];
-        if (rol === "padre" && Array.isArray(hijos)) {
-            hijosFormateados = hijos.map(h => typeof h === "string" ?
-                { dni: h, activo: true } :
-                { dni: h.dni, activo: h.activo !== undefined ? h.activo : true }
-            );
+        if (rol === "padre") {
 
-            const dnis = hijosFormateados.map(h => h.dni);
+            if (Array.isArray(hijos) && hijos.length > 0) {
 
-            // Verificar que los alumnos existan
-            const alumnosExistentes = await Alumno.find({ dni: { $in: dnis } });
+                hijosFormateados = hijos.map(h => typeof h === "string" ?
+                    { dni: h, activo: true } :
+                    { dni: h.dni, activo: h.activo !== undefined ? h.activo : true }
+                );
 
-            if (alumnosExistentes.length !== dnis.length) {
-                const error = new Error("Algún DNI asignado no corresponde a un alumno existente");
+                const dnis = hijosFormateados.map(h => h.dni);
+
+                // Verificar que los alumnos existan
+                const alumnosExistentes = await Alumno.find({ dni: { $in: dnis } });
+
+                if (alumnosExistentes.length !== dnis.length) {
+                    const error = new Error("Algún DNI asignado no corresponde a un alumno existente");
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                // Verificar que los alumnos no estén asignados a otro usuario
+                const usuariosConEsosHijos = await Usuario.find({ "hijos.dni": { $in: dnis } });
+
+                if (usuariosConEsosHijos.length > 0) {
+                    const error = new Error("Alguno de los alumnos ya está asignado a otro usuario padre");
+                    error.statusCode = 400;
+                    throw error;
+                }
+            } else {
+                const error = new Error("El Padre debe tener un hijo asignado");
                 error.statusCode = 400;
                 throw error;
-            }
 
-            // Verificar que los alumnos no estén asignados a otro usuario
-            const usuariosConEsosHijos = await Usuario.find({ "hijos.dni": { $in: dnis } });
-
-            if (usuariosConEsosHijos.length > 0) {
-                const error = new Error("Alguno de los alumnos ya está asignado a otro usuario padre");
-                error.statusCode = 400;
-                throw error;
             }
         }
 
@@ -123,6 +132,7 @@ const createUsuario = async (req, res, next) => {
             }
             profesorIdValido = profesorId;
         }
+
 
         const nuevoUsuario = new Usuario({
             nombre,
